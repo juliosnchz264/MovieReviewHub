@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  // Solo standalone cuando building para Docker. Vercel usa default (serverless).
+  output: process.env.NEXT_OUTPUT === "standalone" ? "standalone" : undefined,
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "image.tmdb.org" },

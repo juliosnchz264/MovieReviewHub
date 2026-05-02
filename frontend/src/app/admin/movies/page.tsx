@@ -39,8 +39,8 @@ export default function AdminMoviesPage() {
       {isError && <p className="text-destructive">Failed to load</p>}
 
       {data && (
-        <div className="overflow-hidden rounded-xl border border-border bg-card">
-          <table className="w-full text-sm">
+        <div className="overflow-x-auto rounded-xl border border-border bg-card">
+          <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border bg-muted/40">
               <tr className="text-left">
                 <th className="px-4 py-2 font-medium">Title</th>

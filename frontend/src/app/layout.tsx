@@ -14,8 +14,28 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "MovieReviewHub",
-  description: "Movie catalog with reviews",
+  title: {
+    default: "MovieReviewHub",
+    template: "%s · MovieReviewHub",
+  },
+  description: "Movie catalog with reviews, favorites, and ratings.",
+  keywords: ["movies", "reviews", "ratings", "catalog", "favorites"],
+  authors: [{ name: "MovieReviewHub" }],
+  openGraph: {
+    title: "MovieReviewHub",
+    description: "Movie catalog with reviews, favorites, and ratings.",
+    type: "website",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "MovieReviewHub",
+    description: "Movie catalog with reviews, favorites, and ratings.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({

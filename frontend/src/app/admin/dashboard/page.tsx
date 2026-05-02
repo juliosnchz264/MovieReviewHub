@@ -1,12 +1,24 @@
 "use client";
 
 import { Users, Film, MessageSquare, Heart, Shield, UserX, UserCheck } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminStats } from "@/features/admin/hooks/useAdmin";
 
 export default function AdminDashboardPage() {
   const { data: stats, isLoading, isError } = useAdminStats();
 
-  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 7 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-border bg-card p-5 shadow-sm">
+            <Skeleton className="h-4 w-24" />
+            <Skeleton className="mt-3 h-8 w-16" />
+          </div>
+        ))}
+      </div>
+    );
+  }
   if (isError || !stats) return <p className="text-destructive">Failed to load stats</p>;
 
   return (

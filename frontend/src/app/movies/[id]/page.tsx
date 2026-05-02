@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useMovie } from "@/features/movies/hooks/useMovie";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
@@ -45,7 +46,17 @@ export default function MovieDetailPage({
           </Button>
         </Link>
 
-        {isLoading && <p className="text-muted-foreground">Loading...</p>}
+        {isLoading && (
+          <div className="grid gap-6 md:grid-cols-[300px_1fr]">
+            <Skeleton className="aspect-2/3 rounded-xl" />
+            <div className="space-y-3">
+              <Skeleton className="h-9 w-2/3" />
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="h-20 w-full" />
+              <Skeleton className="h-10 w-40" />
+            </div>
+          </div>
+        )}
         {isError && <p className="text-destructive">Movie not found</p>}
 
         {movie && (

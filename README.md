@@ -220,7 +220,6 @@ See [DEPLOYMENT.md](DEPLOYMENT.md) for step-by-step Supabase + Render + Vercel s
 
 ## Roadmap (not yet implemented)
 
-- AI review summarization (LLM API).
 - Per-movie OG image generation (instead of poster) for richer link previews.
 - Review reactions (helpful / unhelpful).
 - Email verification on register.

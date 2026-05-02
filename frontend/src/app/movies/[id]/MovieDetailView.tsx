@@ -18,9 +18,12 @@ import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
 import { MovieRow } from "@/features/movies/components/MovieRow";
 import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { Navbar } from "@/components/navbar";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { ApiError } from "@/types/auth";
 
 export function MovieDetailView({ movieId }: { movieId: number }) {
+  const t = useTranslate();
   const validId = Number.isFinite(movieId);
 
   const { data: movie, isLoading, isError } = useMovie(validId ? movieId : null);
@@ -34,13 +37,15 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
   const userAlreadyReviewed = reviews.some((r) => r.userId === currentUser?.id);
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
-        <Link href="/movies">
-          <Button variant="outline" size="sm">
-            ← Back
-          </Button>
-        </Link>
+    <>
+      <Navbar />
+      <main className="min-h-screen px-4 py-10">
+        <div className="mx-auto w-full max-w-5xl space-y-6">
+          <Link href="/movies">
+            <Button variant="outline" size="sm">
+              {t("common.back")}
+            </Button>
+          </Link>
 
         {isLoading && (
           <div className="grid gap-6 md:grid-cols-[300px_1fr]">
@@ -53,7 +58,7 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
             </div>
           </div>
         )}
-        {isError && <p className="text-destructive">Movie not found</p>}
+        {isError && <p className="text-destructive">{t("movieDetail.notFound")}</p>}
 
         {movie && (
           <article className="grid gap-6 md:grid-cols-[300px_1fr]">
@@ -87,7 +92,7 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
                   <RatingStars value={stats.average} readOnly />
                   <span className="text-sm font-medium">{stats.average.toFixed(1)}</span>
                   <span className="text-sm text-muted-foreground">
-                    ({stats.count} {stats.count === 1 ? "review" : "reviews"})
+                    ({t(stats.count === 1 ? "movieDetail.ratingCountOne" : "movieDetail.ratingCountMany", { n: stats.count })})
                   </span>
                 </div>
               )}
@@ -105,7 +110,7 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
 
         {validId && (
           <section className="space-y-4 pt-6">
-            <h2 className="text-xl font-semibold">Reviews</h2>
+            <h2 className="text-xl font-semibold">{t("movieDetail.reviewsTitle")}</h2>
 
             {currentUser && !userAlreadyReviewed && (
               <ReviewForm
@@ -118,9 +123,9 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
             {!currentUser && (
               <div className="rounded-md border border-dashed border-border p-4 text-sm text-muted-foreground">
                 <Link href="/login" className="text-primary hover:underline">
-                  Sign in
-                </Link>{" "}
-                to write a review.
+                  {t("movieDetail.signInPrefix")}
+                </Link>
+                {t("movieDetail.signInSuffix")}
               </div>
             )}
 
@@ -131,15 +136,16 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
         {validId && movie?.genre && (
           <div className="pt-6">
             <MovieRow
-              title="More like this"
-              subtitle={`Other ${movie.genre} movies`}
+              title={t("movieDetail.similarTitle")}
+              subtitle={t("movieDetail.similarSubtitle", { genre: movie.genre })}
               movies={similar.data}
               isLoading={similar.isLoading}
-              emptyText={`No other ${movie.genre} movies in the catalog yet.`}
+              emptyText={t("movieDetail.similarEmpty", { genre: movie.genre })}
             />
           </div>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }

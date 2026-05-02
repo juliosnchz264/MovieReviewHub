@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Navbar } from "@/components/navbar";
 import { useAuthStore } from "@/store/auth";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useMyReviews } from "@/features/reviews/hooks/useReviews";
@@ -28,19 +29,21 @@ export default function ProfilePage() {
   if (!accessToken) return null;
 
   return (
-    <main className="min-h-screen px-4 py-12">
-      <div className="mx-auto w-full max-w-4xl space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">
-              {user?.username ?? "Profile"}
-            </h1>
-            <p className="text-sm text-muted-foreground">{user?.email}</p>
+    <>
+      <Navbar />
+      <main className="min-h-screen px-4 py-10">
+        <div className="mx-auto w-full max-w-4xl space-y-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-semibold tracking-tight">
+                {user?.username ?? "Profile"}
+              </h1>
+              <p className="text-sm text-muted-foreground">{user?.email}</p>
+            </div>
+            <Link href="/dashboard">
+              <Button variant="outline" size="sm">Dashboard</Button>
+            </Link>
           </div>
-          <Link href="/dashboard">
-            <Button variant="outline">Dashboard</Button>
-          </Link>
-        </div>
 
         <div className="border-b border-border">
           <nav className="flex gap-1">
@@ -53,10 +56,11 @@ export default function ProfilePage() {
           </nav>
         </div>
 
-        {tab === "reviews" && <MyReviewsTab />}
-        {tab === "favorites" && <MyFavoritesTab />}
-      </div>
-    </main>
+          {tab === "reviews" && <MyReviewsTab />}
+          {tab === "favorites" && <MyFavoritesTab />}
+        </div>
+      </main>
+    </>
   );
 }
 

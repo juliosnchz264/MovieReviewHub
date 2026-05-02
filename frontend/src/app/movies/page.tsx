@@ -3,17 +3,39 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Button } from "@/components/ui/button";
 import { useInfiniteMovies } from "@/features/movies/hooks/useInfiniteMovies";
 import { MovieGridSkeleton } from "@/features/movies/components/MovieCardSkeleton";
 import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { Navbar } from "@/components/navbar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIntersection } from "@/hooks/useIntersection";
+import { useTranslate } from "@/hooks/useTranslate";
 
-const GENRES = ["", "Action", "Drama", "Comedy", "Horror", "Sci-Fi", "Romance", "Thriller"];
+const GENRES = [
+  "",
+  "Action",
+  "Adventure",
+  "Animation",
+  "Comedy",
+  "Crime",
+  "Documentary",
+  "Drama",
+  "Family",
+  "Fantasy",
+  "History",
+  "Horror",
+  "Music",
+  "Mystery",
+  "Romance",
+  "Science Fiction",
+  "TV Movie",
+  "Thriller",
+  "War",
+  "Western",
+];
 
 export default function MoviesPage() {
+  const t = useTranslate();
   const [titleInput, setTitleInput] = useState("");
   const [genre, setGenre] = useState("");
   const debouncedTitle = useDebouncedValue(titleInput, 350);
@@ -48,22 +70,16 @@ export default function MoviesPage() {
   const totalElements = data?.pages[0]?.totalElements ?? 0;
 
   return (
-    <main className="min-h-screen px-4 py-8 sm:py-12">
-      <div className="mx-auto w-full max-w-6xl space-y-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-3xl font-semibold tracking-tight">Movies</h1>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Link href="/dashboard">
-              <Button variant="outline">Dashboard</Button>
-            </Link>
-          </div>
-        </div>
+    <>
+      <Navbar />
+      <main className="min-h-screen px-4 py-8 sm:py-12">
+        <div className="mx-auto w-full max-w-7xl space-y-6">
+          <h1 className="text-3xl font-semibold tracking-tight">{t("nav.movies")}</h1>
 
-        <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-3">
           <input
             type="search"
-            placeholder="Search title..."
+            placeholder={t("movies.searchPlaceholder")}
             value={titleInput}
             onChange={(e) => setTitleInput(e.target.value)}
             className="min-w-[200px] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
@@ -75,7 +91,7 @@ export default function MoviesPage() {
           >
             {GENRES.map((g) => (
               <option key={g} value={g}>
-                {g || "All genres"}
+                {g ? t(`genres.${g}`) : t("movies.allGenres")}
               </option>
             ))}
           </select>
@@ -83,15 +99,17 @@ export default function MoviesPage() {
 
         {!isLoading && (
           <p className="text-sm text-muted-foreground">
-            {totalElements} {totalElements === 1 ? "movie" : "movies"}
+            {t(totalElements === 1 ? "movies.countOne" : "movies.countMany", {
+              n: totalElements,
+            })}
           </p>
         )}
 
         {isLoading && <MovieGridSkeleton count={8} />}
-        {isError && <p className="text-destructive">Failed to load movies</p>}
+        {isError && <p className="text-destructive">{t("movies.failedToLoad")}</p>}
 
         {!isLoading && movies.length === 0 && (
-          <p className="py-12 text-center text-muted-foreground">No movies found</p>
+          <p className="py-12 text-center text-muted-foreground">{t("movies.empty")}</p>
         )}
 
         {movies.length > 0 && (
@@ -141,10 +159,11 @@ export default function MoviesPage() {
 
         {!hasNextPage && movies.length > 0 && (
           <p className="py-4 text-center text-xs text-muted-foreground">
-            End of catalog
+            {t("movies.endOfCatalog")}
           </p>
         )}
-      </div>
-    </main>
+        </div>
+      </main>
+    </>
   );
 }

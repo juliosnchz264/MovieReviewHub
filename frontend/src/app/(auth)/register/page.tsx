@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useRegister } from "@/features/auth/hooks/useRegister";
 import type { ApiError } from "@/types/auth";
@@ -20,7 +21,10 @@ export default function RegisterPage() {
     register.mutate(
       { username, email, password },
       {
-        onSuccess: () => router.push("/login"),
+        onSuccess: () => {
+          toast.success("Account created — sign in to continue");
+          router.push("/login");
+        },
       }
     );
   }

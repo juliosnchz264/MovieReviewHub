@@ -1,0 +1,51 @@
+package com.moviereviewhub.modules.review.repository;
+
+import com.moviereviewhub.modules.review.domain.Review;
+import com.moviereviewhub.modules.review.dto.MovieRatingStats;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.util.Optional;
+
+public interface ReviewRepository extends JpaRepository<Review, Long> {
+
+    Optional<Review> findByIdAndDeletedFalse(Long id);
+
+    boolean existsByUser_IdAndMovie_IdAndDeletedFalse(Long userId, Long movieId);
+
+    long countByDeletedFalse();
+
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.user
+            JOIN FETCH r.movie
+            WHERE r.deleted = false
+            """)
+    Page<Review> findAllActive(Pageable pageable);
+
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.user
+            WHERE r.movie.id = :movieId AND r.deleted = false
+            """)
+    Page<Review> findByMovieId(@Param("movieId") Long movieId, Pageable pageable);
+
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.movie
+            WHERE r.user.id = :userId AND r.deleted = false
+            """)
+    Page<Review> findByUserId(@Param("userId") Long userId, Pageable pageable);
+
+    @Query("""
+            SELECT new com.moviereviewhub.modules.review.dto.MovieRatingStats(
+                COALESCE(AVG(CAST(r.rating AS double)), 0.0),
+                COUNT(r))
+            FROM Review r
+            WHERE r.movie.id = :movieId AND r.deleted = false
+            """)
+    MovieRatingStats getRatingStats(@Param("movieId") Long movieId);
+}

@@ -3,6 +3,9 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { ReactNode, useState } from "react";
+import { Toaster } from "sonner";
+import { ThemeProvider } from "@/components/theme-provider";
+import { SessionInit } from "@/components/session-init";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -19,9 +22,12 @@ export function Providers({ children }: { children: ReactNode }) {
   );
 
   return (
-    <QueryClientProvider client={client}>
-      {children}
-      <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    <ThemeProvider>
+      <QueryClientProvider client={client}>
+        <SessionInit>{children}</SessionInit>
+        <Toaster richColors position="top-right" />
+        <ReactQueryDevtools initialIsOpen={false} />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

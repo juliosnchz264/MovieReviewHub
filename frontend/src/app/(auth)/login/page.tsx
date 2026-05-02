@@ -4,6 +4,7 @@ import { FormEvent, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AxiosError } from "axios";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useLogin } from "@/features/auth/hooks/useLogin";
 import type { ApiError } from "@/types/auth";
@@ -19,7 +20,10 @@ export default function LoginPage() {
     login.mutate(
       { email, password },
       {
-        onSuccess: () => router.push("/dashboard"),
+        onSuccess: () => {
+          toast.success("Welcome back");
+          router.push("/dashboard");
+        },
       }
     );
   }

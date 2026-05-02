@@ -70,8 +70,4 @@ app:
     image-base-url: ${TMDB_IMAGE_BASE_URL:https://image.tmdb.org/t/p}
     poster-size: ${TMDB_POSTER_SIZE:w500}
 
-logging:
-  level:
-    root: INFO
-    com.moviereviewhub: DEBUG
-    org.hibernate.SQL: WARN
+# Logging configurado en logback-spring.xml (perfil-aware: JSON en prod, pretty en dev)

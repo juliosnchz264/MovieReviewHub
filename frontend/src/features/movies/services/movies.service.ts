@@ -30,4 +30,21 @@ export const moviesService = {
   async remove(id: number): Promise<void> {
     await api.delete(`/movies/${id}`);
   },
+
+  async trending(limit = 10): Promise<Movie[]> {
+    const { data } = await api.get<Movie[]>("/movies/trending", { params: { limit } });
+    return data;
+  },
+
+  async topRated(limit = 10, minReviews = 3): Promise<Movie[]> {
+    const { data } = await api.get<Movie[]>("/movies/top-rated", {
+      params: { limit, minReviews },
+    });
+    return data;
+  },
+
+  async similar(id: number, limit = 8): Promise<Movie[]> {
+    const { data } = await api.get<Movie[]>(`/movies/${id}/similar`, { params: { limit } });
+    return data;
+  },
 };

@@ -7,6 +7,7 @@ import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMovie } from "@/features/movies/hooks/useMovie";
+import { useSimilar } from "@/features/movies/hooks/useDiscover";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   useCreateReview,
@@ -16,6 +17,7 @@ import {
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
+import { MovieRow } from "@/features/movies/components/MovieRow";
 import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
 import type { ApiError } from "@/types/auth";
 
@@ -33,6 +35,7 @@ export default function MovieDetailPage({
   const { data: reviewsPage } = useMovieReviews(movieId);
   const { data: currentUser } = useCurrentUser();
   const createReview = useCreateReview(movieId);
+  const similar = useSimilar(validId ? movieId : null, 12);
 
   const reviews = reviewsPage?.content ?? [];
   const userAlreadyReviewed = reviews.some((r) => r.userId === currentUser?.id);
@@ -130,6 +133,18 @@ export default function MovieDetailPage({
 
             <ReviewList reviews={reviews} movieId={movieId} />
           </section>
+        )}
+
+        {validId && movie?.genre && (
+          <div className="pt-6">
+            <MovieRow
+              title="More like this"
+              subtitle={`Other ${movie.genre} movies`}
+              movies={similar.data}
+              isLoading={similar.isLoading}
+              emptyText={`No other ${movie.genre} movies in the catalog yet.`}
+            />
+          </div>
         )}
       </div>
     </main>

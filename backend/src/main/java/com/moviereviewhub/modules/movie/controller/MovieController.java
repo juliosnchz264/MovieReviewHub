@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/movies")
@@ -62,5 +63,28 @@ public class MovieController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         movieService.softDelete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/trending")
+    public ResponseEntity<List<MovieResponse>> trending(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(movieService.trending(Math.min(limit, 50)));
+    }
+
+    @GetMapping("/top-rated")
+    public ResponseEntity<List<MovieResponse>> topRated(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "3") int minReviews
+    ) {
+        return ResponseEntity.ok(movieService.topRated(Math.min(limit, 50), minReviews));
+    }
+
+    @GetMapping("/{id}/similar")
+    public ResponseEntity<List<MovieResponse>> similar(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "8") int limit
+    ) {
+        return ResponseEntity.ok(movieService.similar(id, Math.min(limit, 20)));
     }
 }

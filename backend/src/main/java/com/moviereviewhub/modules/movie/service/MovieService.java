@@ -12,6 +12,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class MovieService {
@@ -63,5 +67,29 @@ public class MovieService {
                 .orElseThrow(() -> new NotFoundException("Movie not found: " + id));
         movie.setDeleted(true);
         movieRepository.save(movie);
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovieResponse> trending(int limit) {
+        Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
+        return movieRepository.findTrending(since, limit)
+                .stream().map(MovieResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovieResponse> topRated(int limit, int minReviews) {
+        return movieRepository.findTopRated(minReviews, limit)
+                .stream().map(MovieResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<MovieResponse> similar(Long movieId, int limit) {
+        Movie current = movieRepository.findByIdAndDeletedFalse(movieId)
+                .orElseThrow(() -> new NotFoundException("Movie not found: " + movieId));
+        if (current.getGenre() == null || current.getGenre().isBlank()) {
+            return List.of();
+        }
+        return movieRepository.findSimilar(movieId, current.getGenre(), limit)
+                .stream().map(MovieResponse::from).toList();
     }
 }

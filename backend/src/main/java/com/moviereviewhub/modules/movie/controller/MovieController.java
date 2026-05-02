@@ -39,7 +39,7 @@ public class MovieController {
         return ResponseEntity.ok(movieService.search(title, genre, pageable));
     }
 
-    @GetMapping("/{id}")
+    @GetMapping("/{id:\\d+}")
     public ResponseEntity<MovieResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(movieService.findById(id));
     }
@@ -51,14 +51,14 @@ public class MovieController {
         return ResponseEntity.created(URI.create("/api/v1/movies/" + created.id())).body(created);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id:\\d+}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<MovieResponse> update(@PathVariable Long id,
                                                 @Valid @RequestBody MovieRequest req) {
         return ResponseEntity.ok(movieService.update(id, req));
     }
 
-    @DeleteMapping("/{id}")
+    @DeleteMapping("/{id:\\d+}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         movieService.softDelete(id);
@@ -80,7 +80,7 @@ public class MovieController {
         return ResponseEntity.ok(movieService.topRated(Math.min(limit, 50), minReviews));
     }
 
-    @GetMapping("/{id}/similar")
+    @GetMapping("/{id:\\d+}/similar")
     public ResponseEntity<List<MovieResponse>> similar(
             @PathVariable Long id,
             @RequestParam(defaultValue = "8") int limit

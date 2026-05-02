@@ -31,7 +31,7 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     /**
      * Trending: score = reviews_recientes + favoritos_recientes * 2 (favs pesan mas).
-     * Solo cuenta actividad desde :since (typically NOW - 30 days).
+     * Limita via Pageable (Spring traduce a LIMIT/OFFSET).
      */
     @Query(value = """
             SELECT m.* FROM movies m
@@ -43,13 +43,11 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
                 (SELECT COUNT(*) FROM favorites f
                  WHERE f.movie_id = m.id AND f.created_at > :since) * 2
             ) DESC, m.created_at DESC
-            LIMIT :limit
             """, nativeQuery = true)
-    List<Movie> findTrending(@Param("since") Instant since, @Param("limit") int limit);
+    List<Movie> findTrending(@Param("since") Instant since, Pageable pageable);
 
     /**
-     * Top rated: avg rating DESC, requiere minimo :minReviews para evitar
-     * peliculas con 1 review 5* dominando el ranking.
+     * Top rated: avg rating DESC, requiere minimo :minReviews.
      */
     @Query(value = """
             SELECT m.* FROM movies m
@@ -61,14 +59,12 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
             ORDER BY (
                 SELECT AVG(r.rating) FROM reviews r
                 WHERE r.movie_id = m.id AND r.deleted = false
-            ) DESC
-            LIMIT :limit
+            ) DESC NULLS LAST
             """, nativeQuery = true)
-    List<Movie> findTopRated(@Param("minReviews") int minReviews, @Param("limit") int limit);
+    List<Movie> findTopRated(@Param("minReviews") int minReviews, Pageable pageable);
 
     /**
-     * Similar: mismo genero, exclude actual, ordenado por avg rating
-     * (con penalty para 0 reviews via COALESCE).
+     * Similar: mismo genero, exclude actual, ordenado por avg rating.
      */
     @Query(value = """
             SELECT m.* FROM movies m
@@ -80,9 +76,8 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
                 SELECT AVG(r.rating) FROM reviews r
                 WHERE r.movie_id = m.id AND r.deleted = false
             ), 0) DESC, m.created_at DESC
-            LIMIT :limit
             """, nativeQuery = true)
     List<Movie> findSimilar(@Param("movieId") Long movieId,
                             @Param("genre") String genre,
-                            @Param("limit") int limit);
+                            Pageable pageable);
 }

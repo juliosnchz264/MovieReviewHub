@@ -8,6 +8,7 @@ import com.moviereviewhub.modules.movie.dto.MovieResponse;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -72,13 +73,13 @@ public class MovieService {
     @Transactional(readOnly = true)
     public List<MovieResponse> trending(int limit) {
         Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
-        return movieRepository.findTrending(since, limit)
+        return movieRepository.findTrending(since, PageRequest.of(0, limit))
                 .stream().map(MovieResponse::from).toList();
     }
 
     @Transactional(readOnly = true)
     public List<MovieResponse> topRated(int limit, int minReviews) {
-        return movieRepository.findTopRated(minReviews, limit)
+        return movieRepository.findTopRated(minReviews, PageRequest.of(0, limit))
                 .stream().map(MovieResponse::from).toList();
     }
 
@@ -89,7 +90,7 @@ public class MovieService {
         if (current.getGenre() == null || current.getGenre().isBlank()) {
             return List.of();
         }
-        return movieRepository.findSimilar(movieId, current.getGenre(), limit)
+        return movieRepository.findSimilar(movieId, current.getGenre(), PageRequest.of(0, limit))
                 .stream().map(MovieResponse::from).toList();
     }
 }

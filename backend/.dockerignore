@@ -1,0 +1,10 @@
+target/
+.mvn/wrapper/maven-wrapper.jar
+.idea/
+.vscode/
+*.iml
+.env
+.env.local
+backend.log
+run-dev.ps1
+HELP.md

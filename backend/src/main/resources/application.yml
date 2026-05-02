@@ -33,6 +33,17 @@ server:
     include-message: always
     include-binding-errors: always
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
 springdoc:
   api-docs:
     path: /v3/api-docs

@@ -47,6 +47,12 @@
 			<artifactId>spring-boot-starter-validation</artifactId>
 		</dependency>
 
+		<!-- ACTUATOR (health/info endpoints) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+
 		<!-- POSTGRES -->
 		<dependency>
 			<groupId>org.postgresql</groupId>

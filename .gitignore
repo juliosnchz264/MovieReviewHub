@@ -5,6 +5,9 @@
 backend/.env
 frontend/.env.local
 
+# Backend dev artifacts
+backend/backend.log
+
 # Java / Maven
 backend/target/
 backend/.mvn/wrapper/maven-wrapper.jar

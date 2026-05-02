@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Film, Users, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Film, Users, MessageSquare, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/movies", label: "Movies", icon: Film },
+  { href: "/admin/movies/import", label: "Import TMDB", icon: Download },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
 ];
@@ -15,11 +16,19 @@ const ITEMS = [
 export function AdminNav() {
   const pathname = usePathname();
 
+  // Longest matching prefix wins → /admin/movies/import beats /admin/movies.
+  const activeHref = ITEMS.reduce<string | null>((best, item) => {
+    if (pathname === item.href || pathname.startsWith(item.href + "/")) {
+      if (best === null || item.href.length > best.length) return item.href;
+    }
+    return best;
+  }, null);
+
   return (
     <nav className="flex flex-wrap gap-1 border-b border-border pb-2">
       {ITEMS.map((item) => {
         const Icon = item.icon;
-        const active = pathname.startsWith(item.href);
+        const active = item.href === activeHref;
         return (
           <Link
             key={item.href}

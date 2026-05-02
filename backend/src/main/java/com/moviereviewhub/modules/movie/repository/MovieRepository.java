@@ -13,6 +13,8 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     Optional<Movie> findByIdAndDeletedFalse(Long id);
 
+    Optional<Movie> findByTmdbId(Long tmdbId);
+
     long countByDeletedFalse();
 
     @Query("""

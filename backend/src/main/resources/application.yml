@@ -53,6 +53,11 @@ app:
     same-site: ${COOKIE_SAME_SITE:Lax}
     path: ${COOKIE_PATH:/}
     domain: ${COOKIE_DOMAIN:}
+  tmdb:
+    api-key: ${TMDB_API_KEY:}
+    base-url: ${TMDB_BASE_URL:https://api.themoviedb.org/3}
+    image-base-url: ${TMDB_IMAGE_BASE_URL:https://image.tmdb.org/t/p}
+    poster-size: ${TMDB_POSTER_SIZE:w500}
 
 logging:
   level:

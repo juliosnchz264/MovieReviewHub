@@ -42,4 +42,7 @@ public class Movie extends BaseEntity {
 
     @Column(name = "release_date")
     private LocalDate releaseDate;
+
+    @Column(name = "tmdb_id", unique = true)
+    private Long tmdbId;
 }

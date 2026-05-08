@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +56,19 @@ public class MovieService {
         Movie movie = movieRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Movie not found: " + id));
         return MovieResponse.from(movie);
+    }
+
+    /**
+     * Devuelve mapa tmdbId -> id catalogo, solo entradas existentes (no incluye
+     * ids no encontrados). Usado por la pagina de Awards para decidir si
+     * linkea a /movies/{id} interno o a TMDB externo.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> lookupByTmdbIds(Collection<Long> tmdbIds) {
+        if (tmdbIds == null || tmdbIds.isEmpty()) return Map.of();
+        return movieRepository.findByTmdbIdInAndDeletedFalse(tmdbIds).stream()
+                .filter(m -> m.getTmdbId() != null)
+                .collect(Collectors.toMap(Movie::getTmdbId, Movie::getId, (a, b) -> a));
     }
 
     @Transactional

@@ -16,7 +16,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,6 +56,17 @@ public class SeriesService {
         Series series = seriesRepository.findByIdAndDeletedFalse(id)
                 .orElseThrow(() -> new NotFoundException("Series not found: " + id));
         return SeriesResponse.from(series);
+    }
+
+    /**
+     * Devuelve mapa tmdbId -> id catalogo. Vease MovieService#lookupByTmdbIds.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, Long> lookupByTmdbIds(Collection<Long> tmdbIds) {
+        if (tmdbIds == null || tmdbIds.isEmpty()) return Map.of();
+        return seriesRepository.findByTmdbIdInAndDeletedFalse(tmdbIds).stream()
+                .filter(s -> s.getTmdbId() != null)
+                .collect(Collectors.toMap(Series::getTmdbId, Series::getId, (a, b) -> a));
     }
 
     @Transactional

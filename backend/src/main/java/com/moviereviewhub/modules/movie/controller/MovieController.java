@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/movies")
@@ -42,6 +43,11 @@ public class MovieController {
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<MovieResponse> findById(@PathVariable Long id) {
         return ResponseEntity.ok(movieService.findById(id));
+    }
+
+    @GetMapping("/lookup")
+    public ResponseEntity<Map<Long, Long>> lookup(@RequestParam List<Long> tmdbIds) {
+        return ResponseEntity.ok(movieService.lookupByTmdbIds(tmdbIds));
     }
 
     @PostMapping

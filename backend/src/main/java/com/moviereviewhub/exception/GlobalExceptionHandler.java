@@ -2,6 +2,7 @@ package com.moviereviewhub.exception;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.mapping.PropertyReferenceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -25,6 +26,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(ex.getStatus()).body(
                 ErrorResponse.of(ex.getStatus().value(), ex.getStatus().getReasonPhrase(),
                         ex.getMessage(), req.getRequestURI())
+        );
+    }
+
+    // Spring Data lanza esto cuando ?sort=propiedadInexistente — input invalido,
+    // no error del servidor. Devolver 400 en vez del 500 generico.
+    @ExceptionHandler(PropertyReferenceException.class)
+    public ResponseEntity<ErrorResponse> handlePropertyReference(PropertyReferenceException ex,
+                                                                 HttpServletRequest req) {
+        return ResponseEntity.badRequest().body(
+                ErrorResponse.of(400, "Bad Request",
+                        "Invalid sort/filter property: " + ex.getPropertyName(),
+                        req.getRequestURI())
         );
     }
 

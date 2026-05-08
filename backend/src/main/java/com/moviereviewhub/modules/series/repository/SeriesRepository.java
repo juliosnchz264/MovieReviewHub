@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,6 +17,8 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
     Optional<Series> findByIdAndDeletedFalse(Long id);
 
     Optional<Series> findByTmdbId(Long tmdbId);
+
+    List<Series> findByTmdbIdInAndDeletedFalse(Collection<Long> tmdbIds);
 
     long countByDeletedFalse();
 

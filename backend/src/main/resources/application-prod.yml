@@ -1,0 +1,14 @@
+# Overrides solo para perfil prod (Render).
+# Activado via SPRING_PROFILES_ACTIVE=prod en render.yaml.
+spring:
+  main:
+    # Beans se inicializan al primer request, no al arranque.
+    # Reduce startup ~30% en free tier; primera request al endpoint paga la latencia.
+    lazy-initialization: true
+  jpa:
+    open-in-view: false
+    properties:
+      hibernate:
+        # Evita scan de schema en startup mas alla de validate (ya esta en validate).
+        boot:
+          allow_jdbc_metadata_access: true

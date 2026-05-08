@@ -1,10 +1,38 @@
+# Build output
 target/
+*.jar
+*.war
+
+# Maven
 .mvn/wrapper/maven-wrapper.jar
+
+# IDE
 .idea/
 .vscode/
 *.iml
+*.iws
+*.ipr
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local env / secrets — nunca al image
 .env
 .env.local
-backend.log
-run-dev.ps1
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docs y scripts dev (no van en runtime)
+*.md
 HELP.md
+run-dev.ps1
+seed-users.ps1

@@ -78,7 +78,7 @@ function Invoke-Api {
 # ---------------------------------------------------------------
 Write-Host "==> Fetching series catalog..." -ForegroundColor Cyan
 try {
-    $page = Invoke-Api -Method GET -Path "/series?size=200&sort=releaseDate,desc"
+    $page = Invoke-Api -Method GET -Path "/series?size=200&sort=firstAirDate,desc"
 } catch {
     Write-Host "FAIL fetching series: $_" -ForegroundColor Red
     exit 1

@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { organizationJsonLd, websiteJsonLd } from "@/lib/seo/jsonld";
+
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://movie-review-hub-tau.vercel.app";
 
 const inter = Inter({
   variable: "--font-sans",
@@ -16,6 +21,7 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "MovieReviewHub",
     template: "%s · MovieReviewHub",
@@ -23,11 +29,14 @@ export const metadata: Metadata = {
   description: "Movie catalog with reviews, favorites, and ratings.",
   keywords: ["movies", "reviews", "ratings", "catalog", "favorites"],
   authors: [{ name: "MovieReviewHub" }],
+  alternates: { canonical: SITE_URL },
   openGraph: {
     title: "MovieReviewHub",
     description: "Movie catalog with reviews, favorites, and ratings.",
     type: "website",
     locale: "en_US",
+    url: SITE_URL,
+    siteName: "MovieReviewHub",
   },
   twitter: {
     card: "summary_large_image",
@@ -37,6 +46,12 @@ export const metadata: Metadata = {
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 
@@ -52,6 +67,7 @@ export default function RootLayout({
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <JsonLd data={[organizationJsonLd(), websiteJsonLd()]} />
         <Providers>{children}</Providers>
       </body>
     </html>

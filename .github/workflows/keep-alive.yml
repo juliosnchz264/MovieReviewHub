@@ -1,0 +1,37 @@
+name: Keep Render Awake
+
+# El plan free de Render duerme tras 15min sin trafico HTTP entrante.
+# Este cron pingea /actuator/health cada 10min para evitarlo.
+#
+# Nota: GitHub puede retrasar / saltarse crons en periodos de alta carga,
+# por eso 10min (no 14) — varios pings extra por hora reducen el riesgo.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:  # boton para disparar manualmente desde Actions UI
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping /actuator/health
+        env:
+          BACKEND_URL: ${{ secrets.RENDER_BACKEND_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "RENDER_BACKEND_URL secret not set" >&2
+            exit 1
+          fi
+          # -f: fail en HTTP >=400
+          # -s: silent (sin progress bar)
+          # -S: muestra error en stderr cuando falla
+          # --max-time 60: cold start de Render puede tardar ~30-50s
+          # --retry 3 con backoff: tolerante a glitches transitorios
+          curl -fsS \
+               --max-time 60 \
+               --retry 3 \
+               --retry-delay 5 \
+               --retry-all-errors \
+               "$BACKEND_URL/actuator/health"
+          echo ""
+          echo "Ping ok at $(date -u +%FT%TZ)"

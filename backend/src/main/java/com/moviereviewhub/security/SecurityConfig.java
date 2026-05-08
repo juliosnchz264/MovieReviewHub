@@ -53,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers(PUBLIC_PATHS).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/people/**").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/tmdb/posters").permitAll()
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)

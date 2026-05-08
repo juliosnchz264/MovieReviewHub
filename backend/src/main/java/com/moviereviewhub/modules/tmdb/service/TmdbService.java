@@ -325,4 +325,45 @@ public class TmdbService {
                 })
                 .toList();
     }
+
+    // ===================================================================
+    // Poster lookups (publicos, usados por la pagina de Awards). N requests
+    // a TMDB sin batching nativo; fallar uno no aborta el resto. Las
+    // entradas con 404/poster_path null simplemente se omiten del map.
+    // ===================================================================
+
+    public Map<Long, String> fetchMoviePosters(List<Long> tmdbIds) {
+        return fetchPosters(tmdbIds, "/movie/{id}", TmdbMovie.class, TmdbMovie::posterPath);
+    }
+
+    public Map<Long, String> fetchTvPosters(List<Long> tmdbIds) {
+        return fetchPosters(tmdbIds, "/tv/{id}", TmdbTvShow.class, TmdbTvShow::posterPath);
+    }
+
+    private <T> Map<Long, String> fetchPosters(List<Long> tmdbIds,
+                                               String pathTemplate,
+                                               Class<T> bodyType,
+                                               java.util.function.Function<T, String> extractPosterPath) {
+        if (tmdbIds == null || tmdbIds.isEmpty()) return Map.of();
+        requireApiKey();
+        Map<Long, String> out = new java.util.LinkedHashMap<>();
+        for (Long id : tmdbIds) {
+            if (id == null) continue;
+            try {
+                T body = tmdbRestClient.get()
+                        .uri(uri -> uri.path(pathTemplate)
+                                .queryParam("language", "en-US")
+                                .build(id))
+                        .retrieve()
+                        .body(bodyType);
+                if (body == null) continue;
+                String url = buildPosterUrl(extractPosterPath.apply(body));
+                if (url != null) out.put(id, url);
+            } catch (Exception e) {
+                // 404 / network glitch / lo que sea -> omitir, no abortar el batch
+                log.debug("TMDB poster fetch failed for id={} ({}): {}", id, pathTemplate, e.getMessage());
+            }
+        }
+        return out;
+    }
 }

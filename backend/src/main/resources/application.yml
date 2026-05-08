@@ -69,5 +69,9 @@ app:
     base-url: ${TMDB_BASE_URL:https://api.themoviedb.org/3}
     image-base-url: ${TMDB_IMAGE_BASE_URL:https://image.tmdb.org/t/p}
     poster-size: ${TMDB_POSTER_SIZE:w500}
+  keep-alive:
+    enabled: ${KEEP_ALIVE_ENABLED:false}
+    url: ${KEEP_ALIVE_URL:${RENDER_EXTERNAL_URL:}/actuator/health}
+    interval-ms: ${KEEP_ALIVE_INTERVAL_MS:600000}
 
 # Logging configurado en logback-spring.xml (perfil-aware: JSON en prod, pretty en dev)

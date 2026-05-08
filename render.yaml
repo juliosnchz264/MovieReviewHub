@@ -52,3 +52,11 @@ services:
       # TMDB — opcional
       - key: TMDB_API_KEY
         sync: false
+
+      # Keep-alive: self-ping cada 10min mientras awake. RENDER_EXTERNAL_URL
+      # lo expone Render automaticamente -> no hay que setearlo a mano.
+      # El cron externo de GitHub Actions complementa cuando el servicio se durmio.
+      - key: KEEP_ALIVE_ENABLED
+        value: "true"
+      - key: KEEP_ALIVE_INTERVAL_MS
+        value: "600000"

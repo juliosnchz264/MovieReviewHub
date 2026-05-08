@@ -71,9 +71,11 @@ export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Prop
                 </div>
                 <div className="p-2">
                   <h3 className="line-clamp-1 text-xs font-medium">{movie.title}</h3>
-                  <p className="text-[10px] text-muted-foreground">
+                  <p className="line-clamp-1 text-[10px] text-muted-foreground">
                     {movie.releaseDate ? movie.releaseDate.slice(0, 4) : "—"}
-                    {movie.genre ? ` • ${movie.genre}` : ""}
+                    {movie.genres && movie.genres.length > 0
+                      ? ` • ${movie.genres.join(", ")}`
+                      : ""}
                   </p>
                 </div>
               </Link>

@@ -6,7 +6,10 @@ public record AdminStats(
         long bannedUsers,
         long admins,
         long totalMovies,
+        long totalSeries,
         long totalReviews,
-        long totalFavorites
+        long totalSeriesReviews,
+        long totalFavorites,
+        long totalSeriesFavorites
 ) {
 }

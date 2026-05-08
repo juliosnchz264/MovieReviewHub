@@ -1,7 +1,10 @@
 package com.moviereviewhub.modules.tmdb.controller;
 
 import com.moviereviewhub.modules.movie.dto.MovieResponse;
+import com.moviereviewhub.modules.series.dto.SeriesResponse;
+import com.moviereviewhub.modules.tmdb.dto.GenreRefreshResult;
 import com.moviereviewhub.modules.tmdb.dto.TmdbMovieView;
+import com.moviereviewhub.modules.tmdb.dto.TmdbTvView;
 import com.moviereviewhub.modules.tmdb.service.TmdbService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,5 +39,39 @@ public class TmdbController {
     @PostMapping("/import/{tmdbId}")
     public ResponseEntity<MovieResponse> importMovie(@PathVariable Long tmdbId) {
         return ResponseEntity.status(201).body(tmdbService.importMovie(tmdbId));
+    }
+
+    // -----------------------------------------------------------------
+    // TV / Series endpoints
+    // -----------------------------------------------------------------
+
+    @GetMapping("/tv/search")
+    public ResponseEntity<List<TmdbTvView>> searchTv(@RequestParam String query) {
+        return ResponseEntity.ok(tmdbService.searchTv(query));
+    }
+
+    @GetMapping("/tv/popular")
+    public ResponseEntity<List<TmdbTvView>> popularTv() {
+        return ResponseEntity.ok(tmdbService.popularTv());
+    }
+
+    @PostMapping("/tv/import/{tmdbId}")
+    public ResponseEntity<SeriesResponse> importSeries(@PathVariable Long tmdbId) {
+        return ResponseEntity.status(201).body(tmdbService.importSeries(tmdbId));
+    }
+
+    // -----------------------------------------------------------------
+    // Backfill endpoints — re-fetch TMDB para actualizar generos en rows
+    // ya importadas antes de soportar multi-genero.
+    // -----------------------------------------------------------------
+
+    @PostMapping("/refresh-genres/movies")
+    public ResponseEntity<GenreRefreshResult> refreshMovieGenres() {
+        return ResponseEntity.ok(tmdbService.refreshMovieGenres());
+    }
+
+    @PostMapping("/refresh-genres/series")
+    public ResponseEntity<GenreRefreshResult> refreshSeriesGenres() {
+        return ResponseEntity.ok(tmdbService.refreshSeriesGenres());
     }
 }

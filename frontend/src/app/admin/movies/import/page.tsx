@@ -127,9 +127,12 @@ function TmdbCard({
       </div>
       <div className="flex flex-1 flex-col gap-2 p-3">
         <h3 className="line-clamp-1 text-sm font-medium">{movie.title}</h3>
-        <p className="text-xs text-muted-foreground">
+        <p className="line-clamp-1 text-xs text-muted-foreground">
           {movie.releaseDate ? movie.releaseDate.slice(0, 4) : "—"}
           {movie.voteAverage ? ` • ⭐ ${movie.voteAverage.toFixed(1)}` : ""}
+          {movie.genres && movie.genres.length > 0
+            ? ` • ${movie.genres.join(", ")}`
+            : ""}
         </p>
         <div className="mt-auto pt-2">
           {movie.alreadyImported ? (

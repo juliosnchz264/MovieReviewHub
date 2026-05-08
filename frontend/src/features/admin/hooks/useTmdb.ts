@@ -30,3 +30,23 @@ export function useImportTmdbMovie() {
     },
   });
 }
+
+export function useRefreshMovieGenres() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => tmdbService.refreshMovieGenres(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["movies"] });
+    },
+  });
+}
+
+export function useRefreshSeriesGenres() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => tmdbService.refreshSeriesGenres(),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["series"] });
+    },
+  });
+}

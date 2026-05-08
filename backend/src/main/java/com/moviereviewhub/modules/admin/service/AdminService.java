@@ -8,6 +8,9 @@ import com.moviereviewhub.modules.admin.dto.AdminUserResponse;
 import com.moviereviewhub.modules.favorite.repository.FavoriteRepository;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
+import com.moviereviewhub.modules.series.repository.SeriesRepository;
+import com.moviereviewhub.modules.seriesfavorite.repository.SeriesFavoriteRepository;
+import com.moviereviewhub.modules.seriesreview.repository.SeriesReviewRepository;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
@@ -25,6 +28,9 @@ public class AdminService {
     private final MovieRepository movieRepository;
     private final ReviewRepository reviewRepository;
     private final FavoriteRepository favoriteRepository;
+    private final SeriesRepository seriesRepository;
+    private final SeriesReviewRepository seriesReviewRepository;
+    private final SeriesFavoriteRepository seriesFavoriteRepository;
 
     @Transactional(readOnly = true)
     public PagedResponse<AdminUserResponse> listUsers(String search, Pageable pageable) {
@@ -60,8 +66,11 @@ public class AdminService {
                 userRepository.countByDeletedTrue(),
                 userRepository.countByRole(UserRole.ROLE_ADMIN),
                 movieRepository.countByDeletedFalse(),
+                seriesRepository.countByDeletedFalse(),
                 reviewRepository.countByDeletedFalse(),
-                favoriteRepository.count()
+                seriesReviewRepository.countByDeletedFalse(),
+                favoriteRepository.count(),
+                seriesFavoriteRepository.count()
         );
     }
 }

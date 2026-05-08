@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,8 +28,24 @@ public class MovieService {
     public PagedResponse<MovieResponse> search(String title, String genre, Pageable pageable) {
         String t = (title == null) ? "" : title;
         String g = (genre == null) ? "" : genre;
-        Page<Movie> page = movieRepository.search(t, g, pageable);
+        Page<Movie> page = movieRepository.search(t, g, toNativeSort(pageable));
         return PagedResponse.from(page, MovieResponse::from);
+    }
+
+    /**
+     * Native queries necesitan column names (snake_case). Pageable trae camelCase
+     * de propiedades JPA, asi que mapeamos cada Order antes de pasarlo a la query.
+     */
+    private Pageable toNativeSort(Pageable pageable) {
+        if (pageable.getSort().isUnsorted()) return pageable;
+        Sort mapped = Sort.by(pageable.getSort().stream()
+                .map(o -> o.withProperty(camelToSnake(o.getProperty())))
+                .toList());
+        return PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), mapped);
+    }
+
+    private String camelToSnake(String s) {
+        return s.replaceAll("([a-z])([A-Z])", "$1_$2").toLowerCase();
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +60,7 @@ public class MovieService {
         Movie movie = Movie.builder()
                 .title(req.title())
                 .description(req.description())
-                .genre(req.genre())
+                .genres(req.genres() == null ? List.of() : req.genres())
                 .imageUrl(req.imageUrl())
                 .releaseDate(req.releaseDate())
                 .build();
@@ -56,7 +73,7 @@ public class MovieService {
                 .orElseThrow(() -> new NotFoundException("Movie not found: " + id));
         movie.setTitle(req.title());
         movie.setDescription(req.description());
-        movie.setGenre(req.genre());
+        movie.setGenres(req.genres() == null ? List.of() : req.genres());
         movie.setImageUrl(req.imageUrl());
         movie.setReleaseDate(req.releaseDate());
         return MovieResponse.from(movieRepository.save(movie));
@@ -87,10 +104,12 @@ public class MovieService {
     public List<MovieResponse> similar(Long movieId, int limit) {
         Movie current = movieRepository.findByIdAndDeletedFalse(movieId)
                 .orElseThrow(() -> new NotFoundException("Movie not found: " + movieId));
-        if (current.getGenre() == null || current.getGenre().isBlank()) {
+        List<String> genres = current.getGenres();
+        if (genres == null || genres.isEmpty()) {
             return List.of();
         }
-        return movieRepository.findSimilar(movieId, current.getGenre(), PageRequest.of(0, limit))
+        String[] genresArr = genres.toArray(new String[0]);
+        return movieRepository.findSimilar(movieId, genresArr, PageRequest.of(0, limit))
                 .stream().map(MovieResponse::from).toList();
     }
 }

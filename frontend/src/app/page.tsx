@@ -4,7 +4,12 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Navbar } from "@/components/navbar";
 import { MovieRow } from "@/features/movies/components/MovieRow";
+import { SeriesRow } from "@/features/series/components/SeriesRow";
 import { useTrending, useTopRated } from "@/features/movies/hooks/useDiscover";
+import {
+  useTrendingSeries,
+  useTopRatedSeries,
+} from "@/features/series/hooks/useDiscoverSeries";
 import { useAuthStore } from "@/store/auth";
 import { useTranslate } from "@/hooks/useTranslate";
 
@@ -13,6 +18,8 @@ export default function Home() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const trending = useTrending(12);
   const topRated = useTopRated(12, 1);
+  const trendingSeries = useTrendingSeries(12);
+  const topRatedSeries = useTopRatedSeries(12, 1);
 
   return (
     <>
@@ -53,6 +60,22 @@ export default function Home() {
           subtitle={t("home.topRatedSubtitle")}
           movies={topRated.data}
           isLoading={topRated.isLoading}
+          emptyText={t("home.topRatedEmpty")}
+        />
+
+        <SeriesRow
+          title={t("series.trendingTitle")}
+          subtitle={t("series.trendingSubtitle")}
+          items={trendingSeries.data}
+          isLoading={trendingSeries.isLoading}
+          emptyText={t("home.trendingEmpty")}
+        />
+
+        <SeriesRow
+          title={t("series.topRatedTitle")}
+          subtitle={t("series.topRatedSubtitle")}
+          items={topRatedSeries.data}
+          isLoading={topRatedSeries.isLoading}
           emptyText={t("home.topRatedEmpty")}
         />
       </div>

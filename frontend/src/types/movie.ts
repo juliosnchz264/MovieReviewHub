@@ -2,7 +2,7 @@ export interface Movie {
   id: number;
   title: string;
   description: string | null;
-  genre: string | null;
+  genres: string[];
   imageUrl: string | null;
   releaseDate: string | null;
   createdAt: string;
@@ -12,7 +12,7 @@ export interface Movie {
 export interface MovieRequest {
   title: string;
   description?: string | null;
-  genre?: string | null;
+  genres?: string[];
   imageUrl?: string | null;
   releaseDate?: string | null;
 }

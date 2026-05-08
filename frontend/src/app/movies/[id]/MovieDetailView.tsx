@@ -82,7 +82,9 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
               <div>
                 <h1 className="text-3xl font-semibold tracking-tight">{movie.title}</h1>
                 <p className="text-sm text-muted-foreground">
-                  {movie.genre ?? "—"}
+                  {movie.genres && movie.genres.length > 0
+                    ? movie.genres.map((g) => t(`genres.${g}`)).join(", ")
+                    : "—"}
                   {movie.releaseDate ? ` • ${movie.releaseDate}` : ""}
                 </p>
               </div>
@@ -133,14 +135,18 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
           </section>
         )}
 
-        {validId && movie?.genre && (
+        {validId && movie?.genres && movie.genres.length > 0 && (
           <div className="pt-6">
             <MovieRow
               title={t("movieDetail.similarTitle")}
-              subtitle={t("movieDetail.similarSubtitle", { genre: movie.genre })}
+              subtitle={t("movieDetail.similarSubtitle", {
+                genre: movie.genres.map((g) => t(`genres.${g}`)).join(", "),
+              })}
               movies={similar.data}
               isLoading={similar.isLoading}
-              emptyText={t("movieDetail.similarEmpty", { genre: movie.genre })}
+              emptyText={t("movieDetail.similarEmpty", {
+                genre: movie.genres.map((g) => t(`genres.${g}`)).join(", "),
+              })}
             />
           </div>
         )}

@@ -16,6 +16,9 @@ export interface AdminStats {
   bannedUsers: number;
   admins: number;
   totalMovies: number;
+  totalSeries: number;
   totalReviews: number;
+  totalSeriesReviews: number;
   totalFavorites: number;
+  totalSeriesFavorites: number;
 }

@@ -19,12 +19,23 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     long countByDeletedFalse();
 
-    @Query("""
-            SELECT m FROM Movie m
+    /**
+     * Busqueda por titulo + filtro opcional por un genero (debe estar en el array).
+     * Native para usar = ANY(genres) sobre text[].
+     */
+    @Query(value = """
+            SELECT * FROM movies m
             WHERE m.deleted = false
               AND LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%'))
-              AND (:genre = '' OR m.genre = :genre)
-            """)
+              AND (:genre = '' OR :genre = ANY(m.genres))
+            """,
+            countQuery = """
+            SELECT COUNT(*) FROM movies m
+            WHERE m.deleted = false
+              AND LOWER(m.title) LIKE LOWER(CONCAT('%', :title, '%'))
+              AND (:genre = '' OR :genre = ANY(m.genres))
+            """,
+            nativeQuery = true)
     Page<Movie> search(@Param("title") String title,
                        @Param("genre") String genre,
                        Pageable pageable);
@@ -64,20 +75,20 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
     List<Movie> findTopRated(@Param("minReviews") int minReviews, Pageable pageable);
 
     /**
-     * Similar: mismo genero, exclude actual, ordenado por avg rating.
+     * Similar: comparte al menos un genero (overlap &&), excluye actual.
+     * Ordena por avg rating, luego created_at.
      */
     @Query(value = """
             SELECT m.* FROM movies m
             WHERE m.deleted = false
               AND m.id <> :movieId
-              AND m.genre = :genre
-              AND m.genre IS NOT NULL
+              AND m.genres && CAST(:genres AS text[])
             ORDER BY COALESCE((
                 SELECT AVG(r.rating) FROM reviews r
                 WHERE r.movie_id = m.id AND r.deleted = false
             ), 0) DESC, m.created_at DESC
             """, nativeQuery = true)
     List<Movie> findSimilar(@Param("movieId") Long movieId,
-                            @Param("genre") String genre,
+                            @Param("genres") String[] genres,
                             Pageable pageable);
 }

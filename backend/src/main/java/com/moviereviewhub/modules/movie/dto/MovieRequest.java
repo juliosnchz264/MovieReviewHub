@@ -4,6 +4,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 public record MovieRequest(
 
@@ -13,8 +14,7 @@ public record MovieRequest(
 
         String description,
 
-        @Size(max = 50)
-        String genre,
+        List<String> genres,
 
         @Size(max = 2048)
         String imageUrl,

@@ -2,13 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Film, Users, MessageSquare, Download } from "lucide-react";
+import { LayoutDashboard, Film, Tv, Users, MessageSquare, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/movies", label: "Movies", icon: Film },
-  { href: "/admin/movies/import", label: "Import TMDB", icon: Download },
+  { href: "/admin/movies/import", label: "Import movies", icon: Download },
+  { href: "/admin/series", label: "Series", icon: Tv },
+  { href: "/admin/series/import", label: "Import series", icon: Download },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
 ];

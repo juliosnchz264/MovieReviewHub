@@ -6,9 +6,17 @@ import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.modules.movie.domain.Movie;
 import com.moviereviewhub.modules.movie.dto.MovieResponse;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
+import com.moviereviewhub.modules.series.domain.Series;
+import com.moviereviewhub.modules.series.dto.SeriesResponse;
+import com.moviereviewhub.modules.series.repository.SeriesRepository;
+import com.moviereviewhub.modules.tmdb.dto.GenreRefreshResult;
+import com.moviereviewhub.modules.tmdb.dto.TmdbGenre;
 import com.moviereviewhub.modules.tmdb.dto.TmdbMovie;
 import com.moviereviewhub.modules.tmdb.dto.TmdbMovieView;
 import com.moviereviewhub.modules.tmdb.dto.TmdbSearchResponse;
+import com.moviereviewhub.modules.tmdb.dto.TmdbTvSearchResponse;
+import com.moviereviewhub.modules.tmdb.dto.TmdbTvShow;
+import com.moviereviewhub.modules.tmdb.dto.TmdbTvView;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -31,6 +39,7 @@ public class TmdbService {
     private final RestClient tmdbRestClient;
     private final TmdbProperties tmdbProperties;
     private final MovieRepository movieRepository;
+    private final SeriesRepository seriesRepository;
 
     private void requireApiKey() {
         if (tmdbProperties.apiKey() == null || tmdbProperties.apiKey().isBlank()) {
@@ -92,7 +101,7 @@ public class TmdbService {
         Movie movie = Movie.builder()
                 .title(details.title())
                 .description(details.overview())
-                .genre(firstGenre(details))
+                .genres(allGenres(details.genres()))
                 .imageUrl(buildPosterUrl(details.posterPath()))
                 .releaseDate(parseDate(details.releaseDate()))
                 .tmdbId(details.id())
@@ -119,7 +128,7 @@ public class TmdbService {
                             m.overview(),
                             buildPosterUrl(m.posterPath()),
                             m.releaseDate(),
-                            firstGenre(m),
+                            allGenres(m.genres()),
                             m.voteAverage(),
                             m.voteCount(),
                             local != null,
@@ -144,10 +153,176 @@ public class TmdbService {
         }
     }
 
-    private String firstGenre(TmdbMovie m) {
-        if (m.genres() != null && !m.genres().isEmpty()) {
-            return m.genres().get(0).name();
+    /**
+     * Backfill: re-fetch detalles TMDB de cada movie con tmdb_id y actualiza
+     * el array genres. Util para rows importadas antes de soportar multi-genero.
+     * Sin @Transactional global: cada save se commitea por su cuenta para que
+     * un fallo aislado no rollbackee el resto.
+     */
+    public GenreRefreshResult refreshMovieGenres() {
+        requireApiKey();
+        int updated = 0, skipped = 0, failed = 0;
+        List<Movie> all = movieRepository.findAll();
+        for (Movie m : all) {
+            if (m.getTmdbId() == null) { skipped++; continue; }
+            try {
+                Long tmdbId = m.getTmdbId();
+                TmdbMovie details = tmdbRestClient.get()
+                        .uri(uri -> uri.path("/movie/{id}")
+                                .queryParam("language", "en-US")
+                                .build(tmdbId))
+                        .retrieve()
+                        .body(TmdbMovie.class);
+                if (details == null) { skipped++; continue; }
+                List<String> genres = allGenres(details.genres());
+                if (genres.isEmpty()) { skipped++; continue; }
+                m.setGenres(genres);
+                movieRepository.save(m);
+                updated++;
+            } catch (Exception e) {
+                log.warn("Refresh genres failed for movie tmdbId={}: {}", m.getTmdbId(), e.getMessage());
+                failed++;
+            }
         }
-        return null;
+        log.info("Movie genre refresh done — updated={} skipped={} failed={}", updated, skipped, failed);
+        return new GenreRefreshResult(updated, skipped, failed);
+    }
+
+    /** Mismo backfill para series. */
+    public GenreRefreshResult refreshSeriesGenres() {
+        requireApiKey();
+        int updated = 0, skipped = 0, failed = 0;
+        List<Series> all = seriesRepository.findAll();
+        for (Series s : all) {
+            if (s.getTmdbId() == null) { skipped++; continue; }
+            try {
+                Long tmdbId = s.getTmdbId();
+                TmdbTvShow details = tmdbRestClient.get()
+                        .uri(uri -> uri.path("/tv/{id}")
+                                .queryParam("language", "en-US")
+                                .build(tmdbId))
+                        .retrieve()
+                        .body(TmdbTvShow.class);
+                if (details == null) { skipped++; continue; }
+                List<String> genres = allGenres(details.genres());
+                if (genres.isEmpty()) { skipped++; continue; }
+                s.setGenres(genres);
+                seriesRepository.save(s);
+                updated++;
+            } catch (Exception e) {
+                log.warn("Refresh genres failed for series tmdbId={}: {}", s.getTmdbId(), e.getMessage());
+                failed++;
+            }
+        }
+        log.info("Series genre refresh done — updated={} skipped={} failed={}", updated, skipped, failed);
+        return new GenreRefreshResult(updated, skipped, failed);
+    }
+
+    private List<String> allGenres(List<TmdbGenre> genres) {
+        if (genres == null || genres.isEmpty()) return List.of();
+        return genres.stream()
+                .filter(g -> g != null && g.name() != null && !g.name().isBlank())
+                .map(TmdbGenre::name)
+                .toList();
+    }
+
+    // ===================================================================
+    // TV / Series
+    // ===================================================================
+
+    public List<TmdbTvView> searchTv(String query) {
+        requireApiKey();
+        TmdbTvSearchResponse res = tmdbRestClient.get()
+                .uri(uri -> uri.path("/search/tv")
+                        .queryParam("query", query)
+                        .queryParam("include_adult", false)
+                        .queryParam("language", "en-US")
+                        .queryParam("page", 1)
+                        .build())
+                .retrieve()
+                .body(TmdbTvSearchResponse.class);
+
+        if (res == null || res.results() == null) return List.of();
+        return enrichTv(res.results());
+    }
+
+    public List<TmdbTvView> popularTv() {
+        requireApiKey();
+        TmdbTvSearchResponse res = tmdbRestClient.get()
+                .uri(uri -> uri.path("/tv/popular")
+                        .queryParam("language", "en-US")
+                        .queryParam("page", 1)
+                        .build())
+                .retrieve()
+                .body(TmdbTvSearchResponse.class);
+
+        if (res == null || res.results() == null) return List.of();
+        return enrichTv(res.results());
+    }
+
+    @Transactional
+    public SeriesResponse importSeries(Long tmdbId) {
+        requireApiKey();
+
+        Optional<Series> existing = seriesRepository.findByTmdbId(tmdbId);
+        if (existing.isPresent()) {
+            return SeriesResponse.from(existing.get());
+        }
+
+        TmdbTvShow details = tmdbRestClient.get()
+                .uri(uri -> uri.path("/tv/{id}")
+                        .queryParam("language", "en-US")
+                        .build(tmdbId))
+                .retrieve()
+                .body(TmdbTvShow.class);
+
+        if (details == null) {
+            throw new NotFoundException("TMDB series not found: " + tmdbId);
+        }
+
+        Series series = Series.builder()
+                .title(details.name())
+                .description(details.overview())
+                .genres(allGenres(details.genres()))
+                .imageUrl(buildPosterUrl(details.posterPath()))
+                .firstAirDate(parseDate(details.firstAirDate()))
+                .lastAirDate(parseDate(details.lastAirDate()))
+                .numberOfSeasons(details.numberOfSeasons())
+                .numberOfEpisodes(details.numberOfEpisodes())
+                .tmdbId(details.id())
+                .build();
+
+        return SeriesResponse.from(seriesRepository.save(series));
+    }
+
+    private List<TmdbTvView> enrichTv(List<TmdbTvShow> raw) {
+        Set<Long> ids = new HashSet<>();
+        for (TmdbTvShow s : raw) if (s.id() != null) ids.add(s.id());
+        if (ids.isEmpty()) return List.of();
+
+        Map<Long, Series> imported = seriesRepository.findAll().stream()
+                .filter(s -> s.getTmdbId() != null && ids.contains(s.getTmdbId()))
+                .collect(java.util.stream.Collectors.toMap(Series::getTmdbId, s -> s));
+
+        return raw.stream()
+                .map(s -> {
+                    Series local = imported.get(s.id());
+                    return new TmdbTvView(
+                            s.id(),
+                            s.name(),
+                            s.overview(),
+                            buildPosterUrl(s.posterPath()),
+                            s.firstAirDate(),
+                            s.lastAirDate(),
+                            s.numberOfSeasons(),
+                            s.numberOfEpisodes(),
+                            allGenres(s.genres()),
+                            s.voteAverage(),
+                            s.voteCount(),
+                            local != null,
+                            local != null ? local.getId() : null
+                    );
+                })
+                .toList();
     }
 }

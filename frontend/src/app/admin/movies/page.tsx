@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useMovies } from "@/features/movies/hooks/useMovies";
 import { useDeleteMovie } from "@/features/movies/hooks/useMovieMutations";
+import { useRefreshMovieGenres } from "@/features/admin/hooks/useTmdb";
 
 const PAGE_SIZE = 20;
 
@@ -17,6 +18,7 @@ export default function AdminMoviesPage() {
     sort: "createdAt,desc",
   });
   const deleteMutation = useDeleteMovie();
+  const refreshGenres = useRefreshMovieGenres();
 
   function onDelete(id: number, title: string) {
     if (!confirm(`Delete "${title}"? (soft delete, recoverable)`)) return;
@@ -26,13 +28,31 @@ export default function AdminMoviesPage() {
     });
   }
 
+  function onRefreshGenres() {
+    if (!confirm("Re-fetch genres from TMDB for every movie? May take a while.")) return;
+    refreshGenres.mutate(undefined, {
+      onSuccess: (r) =>
+        toast.success(`Updated ${r.updated} • skipped ${r.skipped} • failed ${r.failed}`),
+      onError: () => toast.error("Refresh failed"),
+    });
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{data?.totalElements ?? 0} movies</p>
-        <Link href="/admin/movies/new">
-          <Button>New movie</Button>
-        </Link>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={onRefreshGenres}
+            disabled={refreshGenres.isPending}
+          >
+            {refreshGenres.isPending ? "Refreshing..." : "Refresh genres from TMDB"}
+          </Button>
+          <Link href="/admin/movies/new">
+            <Button>New movie</Button>
+          </Link>
+        </div>
       </div>
 
       {isLoading && <p className="text-muted-foreground">Loading...</p>}
@@ -53,7 +73,9 @@ export default function AdminMoviesPage() {
               {data.content.map((movie) => (
                 <tr key={movie.id} className="border-b border-border last:border-0">
                   <td className="px-4 py-2">{movie.title}</td>
-                  <td className="px-4 py-2 text-muted-foreground">{movie.genre ?? "—"}</td>
+                  <td className="px-4 py-2 text-muted-foreground">
+                    {movie.genres && movie.genres.length > 0 ? movie.genres.join(", ") : "—"}
+                  </td>
                   <td className="px-4 py-2 text-muted-foreground">
                     {movie.releaseDate ?? "—"}
                   </td>

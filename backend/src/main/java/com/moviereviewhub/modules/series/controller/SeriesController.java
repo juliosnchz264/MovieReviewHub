@@ -72,4 +72,19 @@ public class SeriesController {
         seriesService.softDelete(id);
         return ResponseEntity.noContent().build();
     }
+
+    @GetMapping("/trending")
+    public ResponseEntity<List<SeriesResponse>> trending(
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(seriesService.trending(Math.min(limit, 50)));
+    }
+
+    @GetMapping("/top-rated")
+    public ResponseEntity<List<SeriesResponse>> topRated(
+            @RequestParam(defaultValue = "10") int limit,
+            @RequestParam(defaultValue = "1") int minReviews
+    ) {
+        return ResponseEntity.ok(seriesService.topRated(Math.min(limit, 50), minReviews));
+    }
 }

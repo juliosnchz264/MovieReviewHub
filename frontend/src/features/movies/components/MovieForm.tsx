@@ -25,16 +25,20 @@ export function MovieForm({
 }: Props) {
   const [title, setTitle] = useState(initial?.title ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
-  const [genre, setGenre] = useState(initial?.genre ?? "");
+  const [genresInput, setGenresInput] = useState((initial?.genres ?? []).join(", "));
   const [imageUrl, setImageUrl] = useState(initial?.imageUrl ?? "");
   const [releaseDate, setReleaseDate] = useState(initial?.releaseDate ?? "");
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    const genres = genresInput
+      .split(",")
+      .map((g) => g.trim())
+      .filter((g) => g.length > 0);
     onSubmit({
       title,
       description: description || null,
-      genre: genre || null,
+      genres,
       imageUrl: imageUrl || null,
       releaseDate: releaseDate || null,
     });
@@ -78,17 +82,18 @@ export function MovieForm({
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-1.5">
-          <label htmlFor="genre" className="text-sm font-medium">
-            Genre
+          <label htmlFor="genres" className="text-sm font-medium">
+            Genres
           </label>
           <input
-            id="genre"
+            id="genres"
             type="text"
-            maxLength={50}
-            value={genre ?? ""}
-            onChange={(e) => setGenre(e.target.value)}
+            value={genresInput}
+            onChange={(e) => setGenresInput(e.target.value)}
+            placeholder="Action, Drama, Sci-Fi"
             className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
           />
+          <p className="text-xs text-muted-foreground">Comma-separated</p>
         </div>
 
         <div className="space-y-1.5">

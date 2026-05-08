@@ -4,7 +4,7 @@ export interface TmdbMovieView {
   overview: string | null;
   posterUrl: string | null;
   releaseDate: string | null;
-  genre: string | null;
+  genres: string[];
   voteAverage: number | null;
   voteCount: number | null;
   alreadyImported: boolean;

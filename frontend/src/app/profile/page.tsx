@@ -169,8 +169,8 @@ function MyFavoritesTab() {
             </div>
             <div className="p-3">
               <h3 className="line-clamp-1 text-sm font-medium">{movie.title}</h3>
-              <p className="text-xs text-muted-foreground">
-                {movie.genre ?? "—"}
+              <p className="line-clamp-1 text-xs text-muted-foreground">
+                {movie.genres && movie.genres.length > 0 ? movie.genres.join(", ") : "—"}
               </p>
             </div>
           </Link>

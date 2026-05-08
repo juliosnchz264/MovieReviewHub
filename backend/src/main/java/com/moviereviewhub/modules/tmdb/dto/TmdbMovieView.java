@@ -4,7 +4,7 @@ import java.util.List;
 
 /**
  * Vista enriquecida que devolvemos al frontend:
- * url completa de poster + genero como string + flag indicando
+ * url completa de poster + lista de generos + flag indicando
  * si ya esta importado en DB local.
  */
 public record TmdbMovieView(
@@ -13,7 +13,7 @@ public record TmdbMovieView(
         String overview,
         String posterUrl,
         String releaseDate,
-        String genre,
+        List<String> genres,
         Double voteAverage,
         Integer voteCount,
         boolean alreadyImported,

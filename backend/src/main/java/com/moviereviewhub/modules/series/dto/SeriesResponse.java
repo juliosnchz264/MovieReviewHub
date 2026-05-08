@@ -4,12 +4,13 @@ import com.moviereviewhub.modules.series.domain.Series;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 public record SeriesResponse(
         Long id,
         String title,
         String description,
-        String genre,
+        List<String> genres,
         String imageUrl,
         LocalDate firstAirDate,
         LocalDate lastAirDate,
@@ -23,7 +24,7 @@ public record SeriesResponse(
                 s.getId(),
                 s.getTitle(),
                 s.getDescription(),
-                s.getGenre(),
+                s.getGenres(),
                 s.getImageUrl(),
                 s.getFirstAirDate(),
                 s.getLastAirDate(),

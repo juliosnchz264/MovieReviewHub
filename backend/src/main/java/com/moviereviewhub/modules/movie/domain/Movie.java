@@ -12,8 +12,12 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "movies")
@@ -34,8 +38,10 @@ public class Movie extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Column(length = 50)
-    private String genre;
+    @JdbcTypeCode(SqlTypes.ARRAY)
+    @Column(name = "genres", columnDefinition = "text[]", nullable = false)
+    @Builder.Default
+    private List<String> genres = new ArrayList<>();
 
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;

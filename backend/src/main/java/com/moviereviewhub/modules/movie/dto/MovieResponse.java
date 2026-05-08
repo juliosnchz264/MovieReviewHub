@@ -4,12 +4,13 @@ import com.moviereviewhub.modules.movie.domain.Movie;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 public record MovieResponse(
         Long id,
         String title,
         String description,
-        String genre,
+        List<String> genres,
         String imageUrl,
         LocalDate releaseDate,
         Instant createdAt,
@@ -20,7 +21,7 @@ public record MovieResponse(
                 m.getId(),
                 m.getTitle(),
                 m.getDescription(),
-                m.getGenre(),
+                m.getGenres(),
                 m.getImageUrl(),
                 m.getReleaseDate(),
                 m.getCreatedAt(),

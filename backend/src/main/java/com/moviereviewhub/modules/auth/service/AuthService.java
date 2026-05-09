@@ -1,6 +1,7 @@
 package com.moviereviewhub.modules.auth.service;
 
 import com.moviereviewhub.exception.ConflictException;
+import com.moviereviewhub.exception.OAuthOnlyAccountException;
 import com.moviereviewhub.exception.UnauthorizedException;
 import com.moviereviewhub.modules.auth.domain.RefreshToken;
 import com.moviereviewhub.modules.auth.dto.LoginRequest;
@@ -53,6 +54,16 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(LoginRequest req) {
+        // Pre-flight: if the email belongs to an OAuth-only account (no local
+        // password set), surface a specific 409 so the frontend can guide the
+        // user to the correct provider button instead of showing a generic
+        // "invalid credentials" error.
+        userRepository.findByEmailAndDeletedFalse(req.email()).ifPresent(existing -> {
+            if (existing.getPassword() == null && existing.getProvider() != null) {
+                throw new OAuthOnlyAccountException(existing.getProvider());
+            }
+        });
+
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(req.email(), req.password())
         );

@@ -21,6 +21,20 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
+    @ExceptionHandler(OAuthOnlyAccountException.class)
+    public ResponseEntity<Map<String, Object>> handleOAuthOnly(OAuthOnlyAccountException ex,
+                                                               HttpServletRequest req) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("timestamp", java.time.OffsetDateTime.now().toString());
+        body.put("status", ex.getStatus().value());
+        body.put("error", ex.getStatus().getReasonPhrase());
+        body.put("message", ex.getMessage());
+        body.put("path", req.getRequestURI());
+        body.put("code", OAuthOnlyAccountException.CODE);
+        body.put("provider", ex.getProvider());
+        return ResponseEntity.status(ex.getStatus()).body(body);
+    }
+
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApi(ApiException ex, HttpServletRequest req) {
         return ResponseEntity.status(ex.getStatus()).body(

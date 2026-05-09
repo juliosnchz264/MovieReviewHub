@@ -59,8 +59,12 @@ export default function LoginPage() {
   }
 
   const parsed = login.error ? parseAuthError(login.error) : null;
+  const oauthOnlyAccount = parsed?.oauthOnlyAccount;
   const message = parsed?.message;
-  const hasError = Boolean(message);
+  // Avoid duplicating the OAuth-only message inside the form — the banner
+  // above already says it.
+  const inlineMessage = oauthOnlyAccount ? null : message;
+  const hasError = Boolean(inlineMessage);
 
   return (
     <div className="space-y-6">
@@ -74,6 +78,22 @@ export default function LoginPage() {
         </h1>
         <p className="text-sm text-muted-foreground">{t("auth.loginSubtitle")}</p>
       </div>
+
+      {oauthOnlyAccount && (
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded-md border border-primary/40 bg-primary/5 px-3 py-3 text-sm"
+        >
+          <p className="font-medium text-foreground">
+            Esta cuenta usa inicio de sesión con{" "}
+            {oauthOnlyAccount.provider.charAt(0) + oauthOnlyAccount.provider.slice(1).toLowerCase()}.
+          </p>
+          <p className="mt-1 text-muted-foreground">
+            Continúa con el botón de abajo. No tiene contraseña configurada.
+          </p>
+        </div>
+      )}
 
       <GoogleButton label={t("auth.continueWithGoogle")} />
 
@@ -132,14 +152,14 @@ export default function LoginPage() {
           />
         </div>
 
-        {message && (
+        {inlineMessage && (
           <p
             id={errorId}
             role="alert"
             aria-live="assertive"
             className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
           >
-            {message}
+            {inlineMessage}
           </p>
         )}
 

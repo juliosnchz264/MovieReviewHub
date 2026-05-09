@@ -13,14 +13,19 @@ public record ErrorResponse(
         String error,
         String message,
         String path,
+        String code,
         Map<String, List<String>> validationErrors
 ) {
     public static ErrorResponse of(int status, String error, String message, String path) {
-        return new ErrorResponse(OffsetDateTime.now(), status, error, message, path, null);
+        return new ErrorResponse(OffsetDateTime.now(), status, error, message, path, null, null);
+    }
+
+    public static ErrorResponse withCode(int status, String error, String message, String path, String code) {
+        return new ErrorResponse(OffsetDateTime.now(), status, error, message, path, code, null);
     }
 
     public static ErrorResponse withValidation(int status, String error, String message, String path,
                                                Map<String, List<String>> validationErrors) {
-        return new ErrorResponse(OffsetDateTime.now(), status, error, message, path, validationErrors);
+        return new ErrorResponse(OffsetDateTime.now(), status, error, message, path, null, validationErrors);
     }
 }

@@ -31,6 +31,16 @@ spring:
     url: ${FLYWAY_DB_URL:${DB_URL}}
     user: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid,profile,email
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            authorization-grant-type: authorization_code
 
 server:
   port: ${SERVER_PORT:8080}
@@ -69,6 +79,10 @@ app:
     same-site: ${COOKIE_SAME_SITE:Lax}
     path: ${COOKIE_PATH:/}
     domain: ${COOKIE_DOMAIN:}
+  oauth2:
+    success-redirect: ${OAUTH2_SUCCESS_REDIRECT:http://localhost:3000/oauth/callback}
+    failure-redirect: ${OAUTH2_FAILURE_REDIRECT:http://localhost:3000/login}
+    allowed-redirect-origins: ${OAUTH2_ALLOWED_REDIRECT_ORIGINS:http://localhost:3000}
   tmdb:
     api-key: ${TMDB_API_KEY:}
     base-url: ${TMDB_BASE_URL:https://api.themoviedb.org/3}

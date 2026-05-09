@@ -1,21 +1,23 @@
 package com.moviereviewhub.security;
 
+import com.moviereviewhub.config.properties.CookieProperties;
 import com.moviereviewhub.config.properties.CorsProperties;
 import com.moviereviewhub.security.jwt.JwtAuthenticationFilter;
+import com.moviereviewhub.security.oauth2.CookieOAuth2AuthorizationRequestRepository;
+import com.moviereviewhub.security.oauth2.OAuth2FailureHandler;
+import com.moviereviewhub.security.oauth2.OAuth2SuccessHandler;
 import com.moviereviewhub.security.ratelimit.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.web.AuthorizationRequestRepository;
+import org.springframework.security.oauth2.core.endpoint.OAuth2AuthorizationRequest;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -35,12 +37,17 @@ public class SecurityConfig {
             "/v3/api-docs/**",
             "/swagger-ui/**",
             "/swagger-ui.html",
-            "/actuator/**"
+            "/actuator/**",
+            "/oauth2/**",
+            "/login/oauth2/**"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final RateLimitFilter rateLimitFilter;
     private final CorsProperties corsProperties;
+    private final CookieProperties cookieProperties;
+    private final OAuth2SuccessHandler oauth2SuccessHandler;
+    private final OAuth2FailureHandler oauth2FailureHandler;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -57,10 +64,23 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/tmdb/posters").permitAll()
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth -> oauth
+                        .authorizationEndpoint(a -> a.authorizationRequestRepository(authorizationRequestRepository()))
+                        .successHandler(oauth2SuccessHandler)
+                        .failureHandler(oauth2FailureHandler)
+                )
                 .addFilterBefore(rateLimitFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    @Bean
+    public AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository() {
+        return new CookieOAuth2AuthorizationRequestRepository(
+                cookieProperties.secure(),
+                cookieProperties.sameSite()
+        );
     }
 
     @Bean
@@ -76,15 +96,5 @@ public class SecurityConfig {
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", cfg);
         return source;
-    }
-
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
-
-    @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration cfg) throws Exception {
-        return cfg.getAuthenticationManager();
     }
 }

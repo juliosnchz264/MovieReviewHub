@@ -1,13 +1,12 @@
 package com.moviereviewhub.modules.auth.service;
 
-import com.moviereviewhub.config.properties.JwtProperties;
 import com.moviereviewhub.exception.ConflictException;
 import com.moviereviewhub.exception.UnauthorizedException;
 import com.moviereviewhub.modules.auth.domain.RefreshToken;
-import com.moviereviewhub.modules.auth.dto.AuthResponse;
 import com.moviereviewhub.modules.auth.dto.LoginRequest;
 import com.moviereviewhub.modules.auth.dto.RegisterRequest;
 import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
+import com.moviereviewhub.modules.auth.service.TokenIssuer.AuthResult;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.dto.UserResponse;
@@ -22,8 +21,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
-
 @Service
 @RequiredArgsConstructor
 public class AuthService {
@@ -33,7 +30,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
-    private final JwtProperties jwtProperties;
+    private final TokenIssuer tokenIssuer;
 
     @Transactional
     public UserResponse register(RegisterRequest req) {
@@ -63,7 +60,7 @@ public class AuthService {
         User user = userRepository.findByEmailAndDeletedFalse(req.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
-        return issueTokens(user);
+        return tokenIssuer.issueTokens(user);
     }
 
     @Transactional
@@ -94,7 +91,7 @@ public class AuthService {
         stored.setRevoked(true);
         refreshTokenRepository.save(stored);
 
-        return issueTokens(stored.getUser());
+        return tokenIssuer.issueTokens(stored.getUser());
     }
 
     @Transactional
@@ -106,25 +103,5 @@ public class AuthService {
             rt.setRevoked(true);
             refreshTokenRepository.save(rt);
         });
-    }
-
-    private AuthResult issueTokens(User user) {
-        String access = jwtService.generateAccessToken(user);
-        String refresh = jwtService.generateRefreshToken(user);
-
-        RefreshToken rt = RefreshToken.builder()
-                .token(refresh)
-                .user(user)
-                .expiresAt(Instant.now().plusMillis(jwtProperties.refreshExpirationMs()))
-                .revoked(false)
-                .build();
-        refreshTokenRepository.save(rt);
-
-        AuthResponse body = AuthResponse.of(access, jwtProperties.accessExpirationMs(),
-                UserResponse.from(user));
-        return new AuthResult(body, refresh);
-    }
-
-    public record AuthResult(AuthResponse body, String refreshToken) {
     }
 }

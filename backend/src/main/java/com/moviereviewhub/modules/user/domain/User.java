@@ -50,6 +50,12 @@ public class User extends BaseEntity {
     @Column(name = "avatar_url", columnDefinition = "TEXT")
     private String avatarUrl;
 
+    @Column(name = "cover_url", columnDefinition = "TEXT")
+    private String coverUrl;
+
+    @Column(length = 500)
+    private String bio;
+
     @lombok.Builder.Default
     @Column(name = "profile_completed", nullable = false)
     private boolean profileCompleted = true;

@@ -1,18 +1,25 @@
 package com.moviereviewhub.modules.user.service;
 
 import com.moviereviewhub.exception.ConflictException;
+import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.exception.UnauthorizedException;
 import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
 import com.moviereviewhub.modules.auth.service.TokenIssuer;
 import com.moviereviewhub.modules.auth.service.TokenIssuer.AuthResult;
 import com.moviereviewhub.modules.favorite.repository.FavoriteRepository;
+import com.moviereviewhub.modules.list.domain.ListVisibility;
+import com.moviereviewhub.modules.list.repository.ListRepository;
+import com.moviereviewhub.modules.review.dto.MovieRatingStats;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
+import com.moviereviewhub.modules.seriesreview.repository.SeriesReviewRepository;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.dto.AccountStatsResponse;
 import com.moviereviewhub.modules.user.dto.ChangePasswordRequest;
 import com.moviereviewhub.modules.user.dto.CompleteProfileRequest;
 import com.moviereviewhub.modules.user.dto.DeleteAccountRequest;
+import com.moviereviewhub.modules.user.dto.PublicProfileResponse;
 import com.moviereviewhub.modules.user.dto.UpdateEmailRequest;
+import com.moviereviewhub.modules.user.dto.UpdateProfileRequest;
 import com.moviereviewhub.modules.user.dto.UpdateUsernameRequest;
 import com.moviereviewhub.modules.user.dto.UserResponse;
 import com.moviereviewhub.modules.user.repository.UserRepository;
@@ -28,7 +35,9 @@ public class UserService {
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final ReviewRepository reviewRepository;
+    private final SeriesReviewRepository seriesReviewRepository;
     private final FavoriteRepository favoriteRepository;
+    private final ListRepository listRepository;
     private final PasswordEncoder passwordEncoder;
     private final TokenIssuer tokenIssuer;
 
@@ -51,6 +60,74 @@ public class UserService {
         long reviews = reviewRepository.countByUser_IdAndDeletedFalse(user.getId());
         long favorites = favoriteRepository.countByUserId(user.getId());
         return new AccountStatsResponse(reviews, favorites, user.getCreatedAt());
+    }
+
+    /**
+     * Perfil publico. Endpoint sin auth.
+     *  - Soft-deleted -> 404 (no leak existence).
+     *  - No expone email/role/provider/timestamps internos.
+     *  - Averages en escala 0-5 (rating storage es 1-10, division en query).
+     */
+    @Transactional(readOnly = true)
+    public PublicProfileResponse getPublicProfile(Long userId) {
+        User user = userRepository.findById(userId)
+                .filter(u -> !u.isDeleted())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        MovieRatingStats movieStats = reviewRepository.getUserRatingStats(userId);
+        MovieRatingStats tvStats = seriesReviewRepository.getUserRatingStats(userId);
+        long publicLists = listRepository.countByUserIdAndVisibilityAndDeletedFalse(
+                userId, ListVisibility.PUBLIC);
+
+        return new PublicProfileResponse(
+                user.getId(),
+                user.getUsername(),
+                user.getAvatarUrl(),
+                user.getCoverUrl(),
+                user.getBio(),
+                user.getCreatedAt(),
+                movieStats.count() == 0 ? null : round1(movieStats.average()),
+                tvStats.count() == 0 ? null : round1(tvStats.average()),
+                movieStats.count(),
+                tvStats.count(),
+                publicLists
+        );
+    }
+
+    /**
+     * Self-update de campos del perfil. Solo el owner llega aqui (filtrado en controller via /me).
+     * null = no tocar; "" = limpiar.
+     */
+    @Transactional
+    public PublicProfileResponse updateProfile(User user, UpdateProfileRequest req) {
+        if (req.bio() != null) {
+            String sanitized = sanitizeBio(req.bio());
+            user.setBio(sanitized.isEmpty() ? null : sanitized);
+        }
+        if (req.avatarUrl() != null) {
+            user.setAvatarUrl(req.avatarUrl().isEmpty() ? null : req.avatarUrl());
+        }
+        if (req.coverUrl() != null) {
+            user.setCoverUrl(req.coverUrl().isEmpty() ? null : req.coverUrl());
+        }
+        userRepository.save(user);
+        return getPublicProfile(user.getId());
+    }
+
+    /**
+     * Defensa en profundidad: aunque el frontend renderice como texto, removemos
+     * caracteres de control y cualquier tag para que un cliente que use el bio
+     * en un contexto distinto (RSS, OG meta) no inyecte HTML.
+     */
+    private static String sanitizeBio(String raw) {
+        String stripped = raw.replaceAll("[\\p{Cntrl}&&[^\r\n\t]]", "");
+        stripped = stripped.replaceAll("<[^>]*>", "");
+        return stripped.trim();
+    }
+
+    private static Double round1(Double d) {
+        if (d == null) return null;
+        return Math.round(d * 10.0) / 10.0;
     }
 
     @Transactional

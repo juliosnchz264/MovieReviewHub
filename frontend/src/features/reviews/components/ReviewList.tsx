@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "./RatingStars";
@@ -97,7 +98,12 @@ function ReviewItem({
     <li className="rounded-xl border border-border bg-card p-4">
       <div className="mb-2 flex items-start justify-between gap-2">
         <div>
-          <p className="text-sm font-medium">{review.username}</p>
+          <Link
+            href={`/users/${review.userId}`}
+            className="text-sm font-medium hover:underline focus-visible:underline focus-visible:outline-none"
+          >
+            {review.username}
+          </Link>
           <RatingStars value={review.rating} size="sm" readOnly />
         </div>
         <div className="flex gap-2">

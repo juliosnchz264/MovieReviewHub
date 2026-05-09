@@ -62,6 +62,12 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/series/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/people/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/tmdb/posters").permitAll()
+                        // Lists: GET por slug + GET items + listas PUBLIC de un usuario son accesibles anon.
+                        // PRIVATE manejada en service (404 si no eres owner). /users/me/lists requiere auth via anyRequest.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/lists/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/lists/*/items").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*/lists").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/users/*/profile").permitAll()
                         .anyRequest().authenticated()
                 )
                 .oauth2Login(oauth -> oauth

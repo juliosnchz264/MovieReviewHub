@@ -10,7 +10,9 @@ import com.moviereviewhub.modules.user.dto.AvailabilityResponse;
 import com.moviereviewhub.modules.user.dto.ChangePasswordRequest;
 import com.moviereviewhub.modules.user.dto.CompleteProfileRequest;
 import com.moviereviewhub.modules.user.dto.DeleteAccountRequest;
+import com.moviereviewhub.modules.user.dto.PublicProfileResponse;
 import com.moviereviewhub.modules.user.dto.UpdateEmailRequest;
+import com.moviereviewhub.modules.user.dto.UpdateProfileRequest;
 import com.moviereviewhub.modules.user.dto.UpdateUsernameRequest;
 import com.moviereviewhub.modules.user.dto.UserResponse;
 import com.moviereviewhub.modules.user.service.UserService;
@@ -24,14 +26,18 @@ import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.http.CacheControl;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.concurrent.TimeUnit;
 
 @RestController
 @RequestMapping("/api/v1/users")
@@ -46,6 +52,24 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal CustomUserDetails principal) {
         return ResponseEntity.ok(UserResponse.from(requireAuth(principal).getUser()));
+    }
+
+    /**
+     * Perfil publico. Sin auth. Cache corto para no martillar DB con scrapers/bots.
+     */
+    @GetMapping("/{id:\\d+}/profile")
+    public ResponseEntity<PublicProfileResponse> publicProfile(@PathVariable Long id) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(userService.getPublicProfile(id));
+    }
+
+    @PatchMapping("/me/profile")
+    public ResponseEntity<PublicProfileResponse> updateProfile(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @Valid @RequestBody UpdateProfileRequest req
+    ) {
+        return ResponseEntity.ok(userService.updateProfile(requireAuth(principal).getUser(), req));
     }
 
     @GetMapping("/me/stats")

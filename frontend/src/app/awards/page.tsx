@@ -2,19 +2,25 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Trophy, ExternalLink } from "lucide-react";
+import { Trophy, RefreshCw } from "lucide-react";
 import { Navbar } from "@/components/navbar";
+import { Button } from "@/components/ui/button";
 import { awards, type AwardEntry } from "@/features/awards/data";
 import { useAwardCatalog } from "@/features/awards/hooks/useAwardCatalog";
+import { useAwardSync } from "@/features/awards/hooks/useAwardSync";
 import { useTranslate } from "@/hooks/useTranslate";
+import { useAuthStore } from "@/store/auth";
 
 export default function AwardsPage() {
   const t = useTranslate();
+  const user = useAuthStore((s) => s.user);
+  const isAdmin = user?.role === "ROLE_ADMIN";
 
   const movieTmdbIds = awards.filter((a) => a.winner.mediaType === "movie").map((a) => a.winner.tmdbId);
   const seriesTmdbIds = awards.filter((a) => a.winner.mediaType === "tv").map((a) => a.winner.tmdbId);
 
   const { data } = useAwardCatalog(movieTmdbIds, seriesTmdbIds);
+  const sync = useAwardSync();
 
   const byYear = [...awards]
     .sort((a, b) => b.year - a.year)
@@ -27,20 +33,56 @@ export default function AwardsPage() {
     .map(Number)
     .sort((a, b) => b - a);
 
+  function handleSync() {
+    sync.mutate(
+      awards.map((a) => ({ tmdbId: a.winner.tmdbId, mediaType: a.winner.mediaType }))
+    );
+  }
+
   return (
     <>
       <Navbar />
       <main className="min-h-screen px-4 py-8 sm:py-12">
         <div className="mx-auto w-full max-w-7xl space-y-8">
-          <div className="flex items-center gap-3">
-            <div className="grid size-12 place-items-center rounded-full bg-secondary text-secondary-foreground">
-              <Trophy className="size-6" />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="grid size-12 place-items-center rounded-full bg-secondary text-secondary-foreground">
+                <Trophy className="size-6" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-semibold tracking-tight">{t("nav.awards")}</h1>
+                <p className="text-sm text-muted-foreground">{t("awards.subtitle")}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-semibold tracking-tight">{t("nav.awards")}</h1>
-              <p className="text-sm text-muted-foreground">{t("awards.subtitle")}</p>
-            </div>
+            {isAdmin && (
+              <Button
+                onClick={handleSync}
+                disabled={sync.isPending}
+                variant="outline"
+                size="sm"
+              >
+                <RefreshCw className={sync.isPending ? "size-4 animate-spin" : "size-4"} />
+                {sync.isPending ? t("awards.syncing") : t("awards.sync")}
+              </Button>
+            )}
           </div>
+
+          {sync.isSuccess && sync.data && (
+            <p className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
+              {t("awards.syncDone", {
+                imported:
+                  sync.data.imported.movies + sync.data.imported.series,
+                skipped:
+                  sync.data.skipped.movies + sync.data.skipped.series,
+                failed: sync.data.failed.length,
+              })}
+            </p>
+          )}
+          {sync.isError && (
+            <p className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              {t("awards.syncFailed")}
+            </p>
+          )}
 
           <div className="space-y-10">
             {years.map((year) => (
@@ -95,11 +137,6 @@ function AwardCard({
         : `/series/${catalogId}`
       : null;
 
-  const externalHref =
-    entry.winner.mediaType === "movie"
-      ? `https://www.themoviedb.org/movie/${entry.winner.tmdbId}`
-      : `https://www.themoviedb.org/tv/${entry.winner.tmdbId}`;
-
   const cardInner = (
     <>
       <div className="relative aspect-2/3 bg-muted">
@@ -125,15 +162,8 @@ function AwardCard({
           {entry.category}
         </p>
         <h3 className="line-clamp-1 text-base font-medium">{entry.winner.title}</h3>
-        <p className="flex items-center gap-1 text-xs text-muted-foreground">
-          {internalHref ? (
-            <span>{t("awards.inCatalog")}</span>
-          ) : (
-            <>
-              <span>{t("awards.viewOnTmdb")}</span>
-              <ExternalLink className="size-3" />
-            </>
-          )}
+        <p className="text-xs text-muted-foreground">
+          {internalHref ? t("awards.inCatalog") : t("awards.pendingSync")}
         </p>
       </div>
     </>
@@ -151,13 +181,8 @@ function AwardCard({
   }
 
   return (
-    <a
-      href={externalHref}
-      target="_blank"
-      rel="noreferrer"
-      className={wrapperCls}
-    >
+    <div className={`${wrapperCls} cursor-not-allowed opacity-70`}>
       {cardInner}
-    </a>
+    </div>
   );
 }

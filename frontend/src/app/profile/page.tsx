@@ -12,9 +12,21 @@ import { useMyReviews } from "@/features/reviews/hooks/useReviews";
 import { useMyFavorites } from "@/features/favorites/hooks/useFavorites";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import {
+  useCreateList,
+  useDeleteList,
+  useMyLists,
+} from "@/features/lists/hooks/useLists";
+import { ListGrid } from "@/features/lists/components/ListGrid";
+import {
+  ListFormDialog,
+  type ListFormValues,
+} from "@/features/lists/components/ListFormDialog";
+import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
-type Tab = "reviews" | "favorites";
+type Tab = "reviews" | "favorites" | "lists";
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -53,11 +65,15 @@ export default function ProfilePage() {
             <TabButton active={tab === "favorites"} onClick={() => setTab("favorites")}>
               My favorites
             </TabButton>
+            <TabButton active={tab === "lists"} onClick={() => setTab("lists")}>
+              My lists
+            </TabButton>
           </nav>
         </div>
 
           {tab === "reviews" && <MyReviewsTab />}
           {tab === "favorites" && <MyFavoritesTab />}
+          {tab === "lists" && <MyListsTab />}
         </div>
       </main>
     </>
@@ -124,6 +140,81 @@ function MyReviewsTab() {
         </li>
       ))}
     </ul>
+  );
+}
+
+function MyListsTab() {
+  const { data, isLoading } = useMyLists();
+  const createList = useCreateList();
+  const deleteList = useDeleteList();
+  const [showCreate, setShowCreate] = useState(false);
+
+  async function handleCreate(values: ListFormValues) {
+    await createList.mutateAsync({
+      title: values.title,
+      description: values.description || null,
+      visibility: values.visibility,
+    });
+    toast.success("List created");
+  }
+
+  async function handleDelete(id: number, title: string) {
+    if (!confirm(`Delete "${title}"?`)) return;
+    try {
+      await deleteList.mutateAsync(id);
+      toast.success("List deleted");
+    } catch {
+      toast.error("Could not delete list");
+    }
+  }
+
+  if (isLoading) return <p className="text-muted-foreground">Loading...</p>;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setShowCreate(true)}>
+          <Plus className="size-4" />
+          New list
+        </Button>
+      </div>
+
+      {data && (
+        <div className="space-y-3">
+          {data.length === 0 && (
+            <p className="rounded-md border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+              No lists yet. Create one to start curating.
+            </p>
+          )}
+          {data.length > 0 && <ListGrid lists={data} />}
+          {data.length > 0 && (
+            <ul className="space-y-1 text-xs text-muted-foreground">
+              {data
+                .filter((l) => !l.isDefault)
+                .map((l) => (
+                  <li key={l.id} className="flex items-center gap-2">
+                    <span className="flex-1 truncate">{l.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(l.id, l.title)}
+                      className="text-destructive hover:underline"
+                    >
+                      Delete
+                    </button>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <ListFormDialog
+        open={showCreate}
+        mode="create"
+        onClose={() => setShowCreate(false)}
+        onSubmit={handleCreate}
+      />
+    </div>
   );
 }
 

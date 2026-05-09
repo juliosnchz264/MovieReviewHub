@@ -39,6 +39,14 @@ public class SeriesReviewController {
         return ResponseEntity.ok(reviewService.getStats(seriesId));
     }
 
+    @GetMapping("/api/v1/series/{seriesId:\\d+}/reviews/me")
+    public ResponseEntity<SeriesReviewResponse> myReview(
+            @PathVariable Long seriesId,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findMyReview(principal.getId(), seriesId));
+    }
+
     @PostMapping("/api/v1/series/{seriesId:\\d+}/reviews")
     public ResponseEntity<SeriesReviewResponse> create(
             @PathVariable Long seriesId,

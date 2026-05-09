@@ -128,6 +128,11 @@ export const dictionary = {
       subtitle: "Premios destacados del cine y la TV en los últimos años.",
       inCatalog: "Ver en el catálogo",
       viewOnTmdb: "Ver en TMDB",
+      pendingSync: "Pendiente de sincronizar",
+      sync: "Sincronizar al catálogo",
+      syncing: "Sincronizando…",
+      syncDone: "Sincronización lista — {imported} importados, {skipped} ya existían, {failed} fallaron.",
+      syncFailed: "No se pudo sincronizar el catálogo.",
     },
     genres: {
       Action: "Acción",
@@ -285,6 +290,11 @@ export const dictionary = {
       subtitle: "Notable film and TV awards from the past years.",
       inCatalog: "View in catalog",
       viewOnTmdb: "View on TMDB",
+      pendingSync: "Pending sync",
+      sync: "Sync to catalog",
+      syncing: "Syncing…",
+      syncDone: "Sync complete — {imported} imported, {skipped} already existed, {failed} failed.",
+      syncFailed: "Failed to sync catalog.",
     },
     genres: {
       Action: "Action",

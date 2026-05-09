@@ -4,7 +4,9 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
+import { useAuthStore } from "@/store/auth";
 import type { PagedResponse } from "@/types/movie";
 import type { MovieRatingStats, ReviewRequest } from "@/types/review";
 
@@ -48,6 +50,16 @@ export const seriesReviewsService = {
       params: { page, size },
     });
     return data;
+  },
+  async myReview(seriesId: number): Promise<SeriesReview | null> {
+    try {
+      const { data } = await api.get<SeriesReview>(`/series/${seriesId}/reviews/me`);
+      return data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
   },
 };
 
@@ -110,5 +122,64 @@ export function useDeleteSeriesReview() {
   return useMutation({
     mutationFn: (reviewId: number) => seriesReviewsService.remove(reviewId),
     onSuccess: () => invalidate(qc),
+  });
+}
+
+export function useMySeriesReview(seriesId: number) {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  return useQuery({
+    queryKey: ["my-review", "series", seriesId],
+    queryFn: () => seriesReviewsService.myReview(seriesId),
+    enabled: accessToken !== null && Number.isFinite(seriesId),
+    staleTime: 30_000,
+  });
+}
+
+export function useUpsertSeriesRating(seriesId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (rating: number) => {
+      const existing = qc.getQueryData<{ id: number; comment: string | null } | null>([
+        "my-review",
+        "series",
+        seriesId,
+      ]);
+      if (existing) {
+        return seriesReviewsService.update(existing.id, { rating, comment: existing.comment });
+      }
+      return seriesReviewsService.create(seriesId, { rating, comment: null });
+    },
+    onSuccess: () => {
+      const had = qc.getQueryData(["my-review", "series", seriesId]);
+      qc.invalidateQueries({ queryKey: ["my-review", "series", seriesId] });
+      invalidate(qc, seriesId);
+      toast.success(had ? "Rating updated" : "Rating saved");
+    },
+    onError: () => {
+      toast.error("Could not save rating");
+    },
+  });
+}
+
+export function useRemoveSeriesRating(seriesId: number) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const existing = qc.getQueryData<{ id: number } | null>([
+        "my-review",
+        "series",
+        seriesId,
+      ]);
+      if (!existing) return;
+      await seriesReviewsService.remove(existing.id);
+    },
+    onSuccess: () => {
+      qc.setQueryData(["my-review", "series", seriesId], null);
+      invalidate(qc, seriesId);
+      toast.success("Rating removed");
+    },
+    onError: () => {
+      toast.error("Could not remove rating");
+    },
   });
 }

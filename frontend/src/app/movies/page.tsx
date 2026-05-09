@@ -5,7 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useInfiniteMovies } from "@/features/movies/hooks/useInfiniteMovies";
 import { MovieGridSkeleton } from "@/features/movies/components/MovieCardSkeleton";
-import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
 import { Navbar } from "@/components/navbar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIntersection } from "@/hooks/useIntersection";
@@ -119,11 +119,9 @@ export default function MoviesPage() {
                 key={movie.id}
                 className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
               >
-                <FavoriteButton
-                  movieId={movie.id}
-                  variant="icon"
-                  className="absolute right-2 top-2 z-10"
-                />
+                <div className="absolute right-2 top-2 z-10">
+                  <CardActionsMenu kind="MOVIE" targetId={movie.id} />
+                </div>
                 <Link href={`/movies/${movie.id}`} className="block">
                   <div className="relative aspect-2/3 bg-muted">
                     {movie.imageUrl ? (

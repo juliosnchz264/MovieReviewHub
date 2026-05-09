@@ -11,6 +11,7 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   useCreateReview,
   useMovieReviews,
+  useMyMovieReview,
   useRatingStats,
 } from "@/features/reviews/hooks/useReviews";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
@@ -18,6 +19,7 @@ import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
 import { MovieRow } from "@/features/movies/components/MovieRow";
 import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
 import { Navbar } from "@/components/navbar";
 import { useTranslate } from "@/hooks/useTranslate";
 import type { ApiError } from "@/types/auth";
@@ -30,11 +32,12 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
   const { data: stats } = useRatingStats(movieId);
   const { data: reviewsPage } = useMovieReviews(movieId);
   const { data: currentUser } = useCurrentUser();
+  const { data: myReview } = useMyMovieReview(movieId);
   const createReview = useCreateReview(movieId);
   const similar = useSimilar(validId ? movieId : null, 12);
 
   const reviews = reviewsPage?.content ?? [];
-  const userAlreadyReviewed = reviews.some((r) => r.userId === currentUser?.id);
+  const userAlreadyReviewed = !!myReview;
 
   return (
     <>
@@ -103,8 +106,9 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
                 <p className="leading-relaxed text-foreground/80">{movie.description}</p>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <FavoriteButton movieId={movie.id} />
+                <AddToListPopover kind="MOVIE" targetId={movie.id} />
               </div>
             </div>
           </article>

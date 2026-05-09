@@ -39,6 +39,14 @@ public class ReviewController {
         return ResponseEntity.ok(reviewService.getStats(movieId));
     }
 
+    @GetMapping("/api/v1/movies/{movieId}/reviews/me")
+    public ResponseEntity<ReviewResponse> myReview(
+            @PathVariable Long movieId,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findMyReview(principal.getId(), movieId));
+    }
+
     @PostMapping("/api/v1/movies/{movieId}/reviews")
     public ResponseEntity<ReviewResponse> create(
             @PathVariable Long movieId,

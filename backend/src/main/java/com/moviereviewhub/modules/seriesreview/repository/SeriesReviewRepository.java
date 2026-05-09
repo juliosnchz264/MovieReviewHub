@@ -16,6 +16,8 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
 
     boolean existsByUser_IdAndSeries_IdAndDeletedFalse(Long userId, Long seriesId);
 
+    Optional<SeriesReview> findByUser_IdAndSeries_IdAndDeletedFalse(Long userId, Long seriesId);
+
     long countByDeletedFalse();
 
     @Query("""
@@ -34,10 +36,21 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
 
     @Query("""
             SELECT new com.moviereviewhub.modules.review.dto.MovieRatingStats(
-                COALESCE(AVG(CAST(r.rating AS double)), 0.0),
+                COALESCE(AVG(CAST(r.rating AS double)) / 2.0, 0.0),
                 COUNT(r))
             FROM SeriesReview r
             WHERE r.series.id = :seriesId AND r.deleted = false
             """)
     MovieRatingStats getRatingStats(@Param("seriesId") Long seriesId);
+
+    @Query("""
+            SELECT new com.moviereviewhub.modules.review.dto.MovieRatingStats(
+                COALESCE(AVG(CAST(r.rating AS double)) / 2.0, 0.0),
+                COUNT(r))
+            FROM SeriesReview r
+            WHERE r.user.id = :userId AND r.deleted = false
+            """)
+    MovieRatingStats getUserRatingStats(@Param("userId") Long userId);
+
+    long countByUser_IdAndDeletedFalse(Long userId);
 }

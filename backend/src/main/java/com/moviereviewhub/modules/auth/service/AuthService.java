@@ -8,6 +8,7 @@ import com.moviereviewhub.modules.auth.dto.LoginRequest;
 import com.moviereviewhub.modules.auth.dto.RegisterRequest;
 import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
 import com.moviereviewhub.modules.auth.service.TokenIssuer.AuthResult;
+import com.moviereviewhub.modules.list.service.DefaultListInitializer;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.dto.UserResponse;
@@ -32,6 +33,7 @@ public class AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final TokenIssuer tokenIssuer;
+    private final DefaultListInitializer defaultListInitializer;
 
     @Transactional
     public UserResponse register(RegisterRequest req) {
@@ -49,7 +51,9 @@ public class AuthService {
                 .role(UserRole.ROLE_USER)
                 .build();
 
-        return UserResponse.from(userRepository.save(user));
+        User saved = userRepository.save(user);
+        defaultListInitializer.initializeForUser(saved.getId());
+        return UserResponse.from(saved);
     }
 
     @Transactional

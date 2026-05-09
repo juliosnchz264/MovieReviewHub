@@ -4,6 +4,7 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
 import type { FavoriteCheck } from "@/types/favorite";
@@ -50,6 +51,7 @@ export function useIsSeriesFavorite(seriesId: number) {
 
 export function useToggleSeriesFavorite(seriesId: number) {
   const qc = useQueryClient();
+  const key = ["series-favorite", seriesId];
 
   return useMutation({
     mutationFn: async (isFavoriteNow: boolean) => {
@@ -60,8 +62,18 @@ export function useToggleSeriesFavorite(seriesId: number) {
       await seriesFavoritesService.add(seriesId);
       return true;
     },
-    onSuccess: (newValue) => {
-      qc.setQueryData(["series-favorite", seriesId], newValue);
+    onMutate: async (isFavoriteNow: boolean) => {
+      await qc.cancelQueries({ queryKey: key });
+      const prev = qc.getQueryData<boolean>(key);
+      qc.setQueryData(key, !isFavoriteNow);
+      return { prev };
+    },
+    onError: (_err, _vars, ctx) => {
+      qc.setQueryData(key, ctx?.prev);
+      toast.error("Could not update favorite");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: key });
       qc.invalidateQueries({ queryKey: ["series-favorites", "me"] });
       qc.invalidateQueries({ queryKey: ["admin", "stats"] });
       qc.invalidateQueries({ queryKey: ["series", "trending"] });

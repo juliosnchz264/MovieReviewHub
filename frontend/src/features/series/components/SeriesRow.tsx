@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SeriesFavoriteButton } from "@/features/series/components/SeriesFavoriteButton";
+import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
 import { cn } from "@/lib/utils";
 import type { Series } from "@/types/series";
 
@@ -48,11 +48,9 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
               key={s.id}
               className="group relative w-40 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 transition hover:border-border hover:bg-card hover:shadow-md"
             >
-              <SeriesFavoriteButton
-                seriesId={s.id}
-                variant="icon"
-                className="absolute right-1.5 top-1.5 z-10"
-              />
+              <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+                <CardActionsMenu kind="SERIES" targetId={s.id} />
+              </div>
               <Link href={`/series/${s.id}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {s.imageUrl ? (

@@ -20,6 +20,17 @@ export const reviewsService = {
     return data;
   },
 
+  async myReview(movieId: number): Promise<Review | null> {
+    try {
+      const { data } = await api.get<Review>(`/movies/${movieId}/reviews/me`);
+      return data;
+    } catch (err: unknown) {
+      const status = (err as { response?: { status?: number } })?.response?.status;
+      if (status === 404) return null;
+      throw err;
+    }
+  },
+
   async create(movieId: number, payload: ReviewRequest): Promise<Review> {
     const { data } = await api.post<Review>(`/movies/${movieId}/reviews`, payload);
     return data;

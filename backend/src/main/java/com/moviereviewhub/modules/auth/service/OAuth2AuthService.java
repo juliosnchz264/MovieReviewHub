@@ -1,6 +1,7 @@
 package com.moviereviewhub.modules.auth.service;
 
 import com.moviereviewhub.modules.auth.service.TokenIssuer.AuthResult;
+import com.moviereviewhub.modules.list.service.DefaultListInitializer;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
@@ -21,6 +22,7 @@ public class OAuth2AuthService {
 
     private final UserRepository userRepository;
     private final TokenIssuer tokenIssuer;
+    private final DefaultListInitializer defaultListInitializer;
 
     public record OAuth2UserInfo(
             String provider,
@@ -90,7 +92,9 @@ public class OAuth2AuthService {
                 .avatarUrl(info.picture())
                 .profileCompleted(false)
                 .build();
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        defaultListInitializer.initializeForUser(saved.getId());
+        return saved;
     }
 
     private String generateUniqueUsername(OAuth2UserInfo info) {

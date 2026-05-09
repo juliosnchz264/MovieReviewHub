@@ -57,7 +57,7 @@ public class SeriesReviewService {
                 .orElseThrow(() -> new NotFoundException("Series not found"));
 
         SeriesReview review = SeriesReview.builder()
-                .rating(req.rating())
+                .rating(toStoredRating(req.rating()))
                 .comment(req.comment())
                 .user(user)
                 .series(series)
@@ -72,9 +72,21 @@ public class SeriesReviewService {
         if (!review.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You can only edit your own review");
         }
-        review.setRating(req.rating());
+        review.setRating(toStoredRating(req.rating()));
         review.setComment(req.comment());
         return SeriesReviewResponse.from(reviewRepository.save(review));
+    }
+
+    @Transactional(readOnly = true)
+    public SeriesReviewResponse findMyReview(Long userId, Long seriesId) {
+        SeriesReview review = reviewRepository
+                .findByUser_IdAndSeries_IdAndDeletedFalse(userId, seriesId)
+                .orElseThrow(() -> new NotFoundException("Review not found"));
+        return SeriesReviewResponse.from(review);
+    }
+
+    private static int toStoredRating(Double apiRating) {
+        return (int) Math.round(apiRating * 2.0);
     }
 
     @Transactional

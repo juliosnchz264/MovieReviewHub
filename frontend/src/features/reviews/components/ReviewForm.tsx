@@ -29,7 +29,7 @@ export function ReviewForm({
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (rating < 1) return;
+    if (rating < 0.5) return;
     onSubmit({ rating, comment: comment || null });
   }
 
@@ -39,7 +39,7 @@ export function ReviewForm({
     <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-border bg-card p-4">
       <div className="flex items-center gap-3">
         <span className="text-sm font-medium">Your rating</span>
-        <RatingStars value={rating} onChange={setRating} size="lg" />
+        <RatingStars value={rating} onChange={setRating} size="lg" allowHalf />
       </div>
 
       <textarea
@@ -54,7 +54,7 @@ export function ReviewForm({
       {message && <p className="text-sm text-destructive">{message}</p>}
 
       <div className="flex gap-2">
-        <Button type="submit" disabled={pending || rating < 1}>
+        <Button type="submit" disabled={pending || rating < 0.5}>
           {pending ? "Saving..." : submitLabel}
         </Button>
         {onCancel && (

@@ -6,7 +6,7 @@ import java.time.Instant;
 
 public record SeriesReviewResponse(
         Long id,
-        Integer rating,
+        Double rating,
         String comment,
         Long userId,
         String username,
@@ -18,7 +18,7 @@ public record SeriesReviewResponse(
     public static SeriesReviewResponse from(SeriesReview r) {
         return new SeriesReviewResponse(
                 r.getId(),
-                r.getRating(),
+                r.getRating() / 2.0,
                 r.getComment(),
                 r.getUser().getId(),
                 r.getUser().getUsername(),

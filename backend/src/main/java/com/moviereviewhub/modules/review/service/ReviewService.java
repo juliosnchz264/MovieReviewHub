@@ -57,7 +57,7 @@ public class ReviewService {
                 .orElseThrow(() -> new NotFoundException("Movie not found"));
 
         Review review = Review.builder()
-                .rating(req.rating())
+                .rating(toStoredRating(req.rating()))
                 .comment(req.comment())
                 .user(user)
                 .movie(movie)
@@ -72,9 +72,21 @@ public class ReviewService {
         if (!review.getUser().getId().equals(userId)) {
             throw new UnauthorizedException("You can only edit your own review");
         }
-        review.setRating(req.rating());
+        review.setRating(toStoredRating(req.rating()));
         review.setComment(req.comment());
         return ReviewResponse.from(reviewRepository.save(review));
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewResponse findMyReview(Long userId, Long movieId) {
+        Review review = reviewRepository
+                .findByUser_IdAndMovie_IdAndDeletedFalse(userId, movieId)
+                .orElseThrow(() -> new NotFoundException("Review not found"));
+        return ReviewResponse.from(review);
+    }
+
+    private static int toStoredRating(Double apiRating) {
+        return (int) Math.round(apiRating * 2.0);
     }
 
     @Transactional

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
 import { useInfiniteSeries } from "@/features/series/hooks/useSeries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIntersection } from "@/hooks/useIntersection";
@@ -119,37 +120,41 @@ export default function SeriesPage() {
           {items.length > 0 && (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {items.map((s) => (
-                <Link
+                <div
                   key={s.id}
-                  href={`/series/${s.id}`}
                   className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
                 >
-                  <div className="relative aspect-2/3 bg-muted">
-                    {s.imageUrl ? (
-                      <Image
-                        src={s.imageUrl}
-                        alt={s.title}
-                        fill
-                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        className="object-cover transition group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="flex h-full items-center justify-center text-muted-foreground">
-                        No image
-                      </div>
-                    )}
+                  <div className="absolute right-2 top-2 z-10">
+                    <CardActionsMenu kind="SERIES" targetId={s.id} />
                   </div>
-                  <div className="p-3">
-                    <h3 className="line-clamp-1 text-sm font-medium">{s.title}</h3>
-                    <p className="line-clamp-1 text-xs text-muted-foreground">
-                      {s.genres && s.genres.length > 0
-                        ? s.genres.map((g) => t(`genres.${g}`)).join(", ")
-                        : "—"}
-                      {s.firstAirDate ? ` • ${s.firstAirDate.slice(0, 4)}` : ""}
-                      {s.numberOfSeasons ? ` • ${s.numberOfSeasons}S` : ""}
-                    </p>
-                  </div>
-                </Link>
+                  <Link href={`/series/${s.id}`} className="block">
+                    <div className="relative aspect-2/3 bg-muted">
+                      {s.imageUrl ? (
+                        <Image
+                          src={s.imageUrl}
+                          alt={s.title}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                          className="object-cover transition group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center text-muted-foreground">
+                          No image
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h3 className="line-clamp-1 text-sm font-medium">{s.title}</h3>
+                      <p className="line-clamp-1 text-xs text-muted-foreground">
+                        {s.genres && s.genres.length > 0
+                          ? s.genres.map((g) => t(`genres.${g}`)).join(", ")
+                          : "—"}
+                        {s.firstAirDate ? ` • ${s.firstAirDate.slice(0, 4)}` : ""}
+                        {s.numberOfSeasons ? ` • ${s.numberOfSeasons}S` : ""}
+                      </p>
+                    </div>
+                  </Link>
+                </div>
               ))}
             </div>
           )}

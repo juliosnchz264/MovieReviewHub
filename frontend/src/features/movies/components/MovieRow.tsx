@@ -4,7 +4,7 @@ import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
-import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 
@@ -48,11 +48,9 @@ export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Prop
               key={movie.id}
               className="group relative w-40 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 transition hover:border-border hover:bg-card hover:shadow-md"
             >
-              <FavoriteButton
-                movieId={movie.id}
-                variant="icon"
-                className="absolute right-1.5 top-1.5 z-10"
-              />
+              <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
+                <CardActionsMenu kind="MOVIE" targetId={movie.id} />
+              </div>
               <Link href={`/movies/${movie.id}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {movie.imageUrl ? (

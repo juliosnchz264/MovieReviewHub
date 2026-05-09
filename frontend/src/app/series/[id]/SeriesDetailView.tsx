@@ -9,10 +9,12 @@ import { Navbar } from "@/components/navbar";
 import { useSeriesItem, useSimilarSeries } from "@/features/series/hooks/useSeries";
 import {
   useCreateSeriesReview,
+  useMySeriesReview,
   useSeriesRatingStats,
   useSeriesReviews,
 } from "@/features/series/hooks/useSeriesReviews";
 import { SeriesFavoriteButton } from "@/features/series/components/SeriesFavoriteButton";
+import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
 import { SeriesReviewList } from "@/features/series/components/SeriesReviewList";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
@@ -29,10 +31,11 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
   const { data: stats } = useSeriesRatingStats(seriesId);
   const { data: reviewsPage } = useSeriesReviews(seriesId);
   const { data: currentUser } = useCurrentUser();
+  const { data: myReview } = useMySeriesReview(seriesId);
   const createReview = useCreateSeriesReview(seriesId);
 
   const reviews = reviewsPage?.content ?? [];
-  const userAlreadyReviewed = reviews.some((r) => r.userId === currentUser?.id);
+  const userAlreadyReviewed = !!myReview;
 
   return (
     <>
@@ -120,8 +123,9 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                   <p className="leading-relaxed text-foreground/80">{series.description}</p>
                 )}
 
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <SeriesFavoriteButton seriesId={series.id} />
+                  <AddToListPopover kind="SERIES" targetId={series.id} />
                 </div>
               </div>
             </article>

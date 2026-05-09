@@ -25,7 +25,7 @@ async function fetchSeries(id: string): Promise<Series | null> {
 async function fetchStats(id: string): Promise<MovieRatingStats | null> {
   if (!Number.isFinite(Number(id))) return null;
   try {
-    const res = await fetch(`${API_URL}/series/${id}/rating`, {
+    const res = await fetch(`${API_URL}/series/${id}/reviews/stats`, {
       next: { revalidate: 300 },
     });
     if (!res.ok) return null;

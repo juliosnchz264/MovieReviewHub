@@ -2,16 +2,20 @@ package com.moviereviewhub.modules.tmdb.controller;
 
 import com.moviereviewhub.modules.movie.dto.MovieResponse;
 import com.moviereviewhub.modules.series.dto.SeriesResponse;
+import com.moviereviewhub.modules.tmdb.dto.AwardSyncRequest;
+import com.moviereviewhub.modules.tmdb.dto.AwardSyncResult;
 import com.moviereviewhub.modules.tmdb.dto.GenreRefreshResult;
 import com.moviereviewhub.modules.tmdb.dto.TmdbMovieView;
 import com.moviereviewhub.modules.tmdb.dto.TmdbTvView;
 import com.moviereviewhub.modules.tmdb.service.TmdbService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -73,5 +77,10 @@ public class TmdbController {
     @PostMapping("/refresh-genres/series")
     public ResponseEntity<GenreRefreshResult> refreshSeriesGenres() {
         return ResponseEntity.ok(tmdbService.refreshSeriesGenres());
+    }
+
+    @PostMapping("/awards/sync")
+    public ResponseEntity<AwardSyncResult> syncAwards(@Valid @RequestBody AwardSyncRequest request) {
+        return ResponseEntity.ok(tmdbService.syncAwards(request.items()));
     }
 }

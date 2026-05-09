@@ -9,6 +9,8 @@ import com.moviereviewhub.modules.movie.repository.MovieRepository;
 import com.moviereviewhub.modules.series.domain.Series;
 import com.moviereviewhub.modules.series.dto.SeriesResponse;
 import com.moviereviewhub.modules.series.repository.SeriesRepository;
+import com.moviereviewhub.modules.tmdb.dto.AwardSyncRequest;
+import com.moviereviewhub.modules.tmdb.dto.AwardSyncResult;
 import com.moviereviewhub.modules.tmdb.dto.GenreRefreshResult;
 import com.moviereviewhub.modules.tmdb.dto.TmdbGenre;
 import com.moviereviewhub.modules.tmdb.dto.TmdbMovie;
@@ -25,6 +27,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -365,5 +369,64 @@ public class TmdbService {
             }
         }
         return out;
+    }
+
+    // ===================================================================
+    // Awards bulk import
+    // ===================================================================
+
+    /**
+     * Importa todos los items que aun no esten en el catalogo y devuelve el
+     * mapping completo tmdbId -> catalogId. Sin @Transactional global: cada
+     * import gestiona su propia tx via @Transactional en importMovie/importSeries.
+     * Fallos aislados se acumulan en el resultado en vez de abortar el batch.
+     */
+    public AwardSyncResult syncAwards(List<AwardSyncRequest.AwardSyncItem> items) {
+        int importedMovies = 0, importedSeries = 0;
+        int skippedMovies = 0, skippedSeries = 0;
+        List<AwardSyncResult.Failure> failures = new ArrayList<>();
+        Map<Long, Long> movieMapping = new HashMap<>();
+        Map<Long, Long> seriesMapping = new HashMap<>();
+
+        for (AwardSyncRequest.AwardSyncItem item : items) {
+            try {
+                if ("movie".equals(item.mediaType())) {
+                    Optional<Movie> existing = movieRepository.findByTmdbId(item.tmdbId());
+                    if (existing.isPresent()) {
+                        skippedMovies++;
+                        movieMapping.put(item.tmdbId(), existing.get().getId());
+                    } else {
+                        MovieResponse imported = importMovie(item.tmdbId());
+                        importedMovies++;
+                        movieMapping.put(item.tmdbId(), imported.id());
+                    }
+                } else {
+                    Optional<Series> existing = seriesRepository.findByTmdbId(item.tmdbId());
+                    if (existing.isPresent()) {
+                        skippedSeries++;
+                        seriesMapping.put(item.tmdbId(), existing.get().getId());
+                    } else {
+                        SeriesResponse imported = importSeries(item.tmdbId());
+                        importedSeries++;
+                        seriesMapping.put(item.tmdbId(), imported.id());
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Award sync failed for tmdbId={} mediaType={}: {}",
+                        item.tmdbId(), item.mediaType(), e.getMessage());
+                failures.add(new AwardSyncResult.Failure(
+                        item.tmdbId(), item.mediaType(), e.getMessage()));
+            }
+        }
+
+        log.info("Awards sync done — imported movies={}, series={}; skipped movies={}, series={}; failed={}",
+                importedMovies, importedSeries, skippedMovies, skippedSeries, failures.size());
+
+        return new AwardSyncResult(
+                new AwardSyncResult.Counts(importedMovies, importedSeries),
+                new AwardSyncResult.Counts(skippedMovies, skippedSeries),
+                failures,
+                new AwardSyncResult.Mapping(movieMapping, seriesMapping)
+        );
     }
 }

@@ -18,6 +18,8 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
 
     long countByDeletedFalse();
 
+    long countByUser_IdAndDeletedFalse(Long userId);
+
     @Query("""
             SELECT r FROM Review r
             JOIN FETCH r.user

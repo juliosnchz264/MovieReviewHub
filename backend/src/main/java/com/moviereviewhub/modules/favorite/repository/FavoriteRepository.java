@@ -15,6 +15,8 @@ public interface FavoriteRepository extends JpaRepository<Favorite, FavoriteId> 
 
     void deleteByUserIdAndMovieId(Long userId, Long movieId);
 
+    long countByUserId(Long userId);
+
     @Query("""
             SELECT f.movie FROM Favorite f
             WHERE f.userId = :userId AND f.movie.deleted = false

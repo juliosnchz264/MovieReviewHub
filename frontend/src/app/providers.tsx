@@ -6,6 +6,7 @@ import { ReactNode, useState } from "react";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionInit } from "@/components/session-init";
+import { ProfileGate } from "@/components/profile-gate";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -24,7 +25,9 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ThemeProvider>
       <QueryClientProvider client={client}>
-        <SessionInit>{children}</SessionInit>
+        <SessionInit>
+          <ProfileGate>{children}</ProfileGate>
+        </SessionInit>
         <Toaster richColors position="top-right" />
         <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>

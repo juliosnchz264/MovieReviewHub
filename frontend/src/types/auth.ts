@@ -5,6 +5,7 @@ export interface User {
   username: string;
   email: string;
   role: UserRole;
+  profileCompleted: boolean;
 }
 
 export interface AuthResponse {

@@ -1,119 +1,257 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useId, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/features/account/components/PasswordInput";
+import { PasswordStrength } from "@/features/auth/components/PasswordStrength";
+import { GoogleButton } from "@/features/auth/components/GoogleButton";
 import { useRegister } from "@/features/auth/hooks/useRegister";
-import type { ApiError } from "@/types/auth";
+import { parseAuthError } from "@/features/auth/utils/errors";
+import { useTranslate } from "@/hooks/useTranslate";
+
+const USERNAME_RE = /^[a-zA-Z0-9._-]{3,50}$/;
+const MIN_PASSWORD = 8;
 
 export default function RegisterPage() {
+  const t = useTranslate();
   const router = useRouter();
   const register = useRegister();
+
+  const usernameId = useId();
+  const emailId = useId();
+  const passwordId = useId();
+  const confirmId = useId();
+  const errorId = useId();
+  const usernameHintId = useId();
+  const passwordHintId = useId();
+  const confirmErrId = useId();
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [touched, setTouched] = useState({
+    username: false,
+    email: false,
+    password: false,
+    confirm: false,
+  });
+
+  const localErrors = useMemo(() => {
+    return {
+      username:
+        touched.username && username && !USERNAME_RE.test(username)
+          ? t("auth.usernameHint")
+          : null,
+      password:
+        touched.password && password && password.length < MIN_PASSWORD
+          ? t("auth.passwordTooShort")
+          : null,
+      confirm:
+        touched.confirm && confirm && confirm !== password
+          ? t("auth.passwordMismatch")
+          : null,
+    };
+  }, [username, password, confirm, touched, t]);
+
+  const formValid =
+    USERNAME_RE.test(username) &&
+    email.includes("@") &&
+    password.length >= MIN_PASSWORD &&
+    confirm === password;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
+    setTouched({ username: true, email: true, password: true, confirm: true });
+    if (!formValid) return;
+
     register.mutate(
-      { username, email, password },
+      { username: username.trim(), email: email.trim(), password },
       {
         onSuccess: () => {
-          toast.success("Account created — sign in to continue");
+          toast.success(t("auth.accountCreated"));
           router.push("/login");
         },
       }
     );
   }
 
-  const error = register.error as AxiosError<ApiError> | null;
-  const message = error?.response?.data?.message ?? error?.message;
-  const fieldErrors = error?.response?.data?.validationErrors;
+  const parsed = register.error ? parseAuthError(register.error) : null;
+  const fieldErrors = parsed?.fieldErrors;
+  const showGenericError = parsed && !fieldErrors;
 
   return (
-    <div className="space-y-6 rounded-xl border border-border bg-card p-6 shadow-sm">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-semibold">Create account</h1>
+    <div className="space-y-6">
+      <div className="space-y-1.5">
+        <h1 className="text-2xl font-semibold tracking-tight">
+          {t("auth.registerTitle")}
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Sign up to write reviews and save favorites.
+          {t("auth.registerSubtitle")}
         </p>
       </div>
 
-      <form onSubmit={onSubmit} className="space-y-4">
+      <GoogleButton label={t("auth.continueWithGoogle")} />
+
+      <div className="flex items-center gap-3">
+        <div className="h-px flex-1 bg-border" />
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
+          {t("auth.orContinueWith")}
+        </span>
+        <div className="h-px flex-1 bg-border" />
+      </div>
+
+      <form onSubmit={onSubmit} noValidate className="space-y-4">
         <div className="space-y-1.5">
-          <label htmlFor="username" className="text-sm font-medium">
-            Username
+          <label htmlFor={usernameId} className="text-sm font-medium">
+            {t("auth.username")}
           </label>
-          <input
-            id="username"
+          <Input
+            id={usernameId}
             type="text"
             autoComplete="username"
             required
             minLength={3}
             maxLength={50}
+            autoFocus
+            placeholder={t("auth.usernamePlaceholder")}
             value={username}
             onChange={(e) => setUsername(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            onBlur={() => setTouched((s) => ({ ...s, username: true }))}
+            aria-invalid={Boolean(localErrors.username || fieldErrors?.username) || undefined}
+            aria-describedby={`${usernameHintId}${
+              localErrors.username || fieldErrors?.username ? ` ${usernameHintId}-err` : ""
+            }`}
           />
-          {fieldErrors?.username && (
-            <p className="text-xs text-destructive">{fieldErrors.username[0]}</p>
+          <p id={usernameHintId} className="text-xs text-muted-foreground">
+            {t("auth.usernameHint")}
+          </p>
+          {(localErrors.username || fieldErrors?.username?.[0]) && (
+            <p
+              id={`${usernameHintId}-err`}
+              className="text-xs text-destructive"
+              aria-live="polite"
+            >
+              {localErrors.username ?? fieldErrors?.username?.[0]}
+            </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="email" className="text-sm font-medium">
-            Email
+          <label htmlFor={emailId} className="text-sm font-medium">
+            {t("auth.email")}
           </label>
-          <input
-            id="email"
+          <Input
+            id={emailId}
             type="email"
             autoComplete="email"
+            inputMode="email"
             required
+            placeholder={t("auth.emailPlaceholder")}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            onBlur={() => setTouched((s) => ({ ...s, email: true }))}
+            aria-invalid={Boolean(fieldErrors?.email) || undefined}
           />
-          {fieldErrors?.email && (
-            <p className="text-xs text-destructive">{fieldErrors.email[0]}</p>
+          {fieldErrors?.email?.[0] && (
+            <p className="text-xs text-destructive" aria-live="polite">
+              {fieldErrors.email[0]}
+            </p>
           )}
         </div>
 
         <div className="space-y-1.5">
-          <label htmlFor="password" className="text-sm font-medium">
-            Password
+          <label htmlFor={passwordId} className="text-sm font-medium">
+            {t("auth.password")}
           </label>
-          <input
-            id="password"
-            type="password"
+          <PasswordInput
+            id={passwordId}
             autoComplete="new-password"
             required
-            minLength={8}
+            minLength={MIN_PASSWORD}
+            showCapsLockHint
+            capsLockMessage={t("auth.capsLockOn")}
+            placeholder={t("auth.passwordPlaceholder")}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            onBlur={() => setTouched((s) => ({ ...s, password: true }))}
+            aria-invalid={Boolean(localErrors.password || fieldErrors?.password) || undefined}
+            aria-describedby={passwordHintId}
           />
-          {fieldErrors?.password && (
-            <p className="text-xs text-destructive">{fieldErrors.password[0]}</p>
+          <PasswordStrength password={password} minLength={MIN_PASSWORD} />
+          <p id={passwordHintId} className="text-xs text-muted-foreground">
+            {t("auth.passwordRequirements")}
+          </p>
+          {(localErrors.password || fieldErrors?.password?.[0]) && (
+            <p className="text-xs text-destructive" aria-live="polite">
+              {localErrors.password ?? fieldErrors?.password?.[0]}
+            </p>
           )}
         </div>
 
-        {message && !fieldErrors && (
-          <p className="text-sm text-destructive">{message}</p>
+        <div className="space-y-1.5">
+          <label htmlFor={confirmId} className="text-sm font-medium">
+            {t("auth.passwordConfirm")}
+          </label>
+          <PasswordInput
+            id={confirmId}
+            autoComplete="new-password"
+            required
+            showCapsLockHint
+            capsLockMessage={t("auth.capsLockOn")}
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            onBlur={() => setTouched((s) => ({ ...s, confirm: true }))}
+            aria-invalid={Boolean(localErrors.confirm) || undefined}
+            aria-describedby={localErrors.confirm ? confirmErrId : undefined}
+          />
+          {localErrors.confirm && (
+            <p
+              id={confirmErrId}
+              className="text-xs text-destructive"
+              aria-live="polite"
+            >
+              {localErrors.confirm}
+            </p>
+          )}
+        </div>
+
+        {showGenericError && (
+          <p
+            id={errorId}
+            role="alert"
+            aria-live="assertive"
+            className="rounded-md border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+          >
+            {parsed.message}
+          </p>
         )}
 
-        <Button type="submit" size="lg" disabled={register.isPending} className="w-full">
-          {register.isPending ? "Creating..." : "Create account"}
+        <Button
+          type="submit"
+          size="lg"
+          disabled={register.isPending}
+          className="w-full"
+        >
+          {register.isPending
+            ? t("auth.submitRegistering")
+            : t("auth.submitRegister")}
         </Button>
       </form>
 
       <p className="text-center text-sm text-muted-foreground">
-        Already have an account?{" "}
-        <Link href="/login" className="text-primary hover:underline">
-          Sign in
+        {t("auth.haveAccount")}{" "}
+        <Link href="/login" className="font-medium text-foreground hover:underline">
+          {t("auth.goLogin")}
         </Link>
+      </p>
+
+      <p className="text-center text-xs text-muted-foreground">
+        {t("auth.legalNotice")}
       </p>
     </div>
   );

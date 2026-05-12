@@ -13,7 +13,8 @@ import {
   useSeriesRatingStats,
   useSeriesReviews,
 } from "@/features/series/hooks/useSeriesReviews";
-import { SeriesFavoriteButton } from "@/features/series/components/SeriesFavoriteButton";
+import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
 import { SeriesReviewList } from "@/features/series/components/SeriesReviewList";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
@@ -123,8 +124,10 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                   <p className="leading-relaxed text-foreground/80">{series.description}</p>
                 )}
 
+                <MyRatingDisplay kind="SERIES" targetId={series.id} variant="panel" />
+
                 <div className="flex flex-wrap gap-2">
-                  <SeriesFavoriteButton seriesId={series.id} />
+                  <MediaFavoriteButton kind="SERIES" targetId={series.id} />
                   <AddToListPopover kind="SERIES" targetId={series.id} />
                 </div>
               </div>

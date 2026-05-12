@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tansta
 import { toast } from "sonner";
 import { favoritesService } from "@/features/favorites/services/favorites.service";
 import { useAuthStore } from "@/store/auth";
+import { useTranslate } from "@/hooks/useTranslate";
 
 export function useMyFavorites(page = 0, size = 20) {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -25,6 +26,7 @@ export function useIsFavorite(movieId: number) {
 
 export function useToggleFavorite(movieId: number) {
   const qc = useQueryClient();
+  const t = useTranslate();
   const key = ["favorite", movieId];
 
   return useMutation({
@@ -42,9 +44,12 @@ export function useToggleFavorite(movieId: number) {
       qc.setQueryData(key, !isFavoriteNow);
       return { prev };
     },
+    onSuccess: (added) => {
+      toast.success(added ? t("toasts.favoriteAdded") : t("toasts.favoriteRemoved"));
+    },
     onError: (_err, _vars, ctx) => {
       qc.setQueryData(key, ctx?.prev);
-      toast.error("Could not update favorite");
+      toast.error(t("toasts.favoriteError"));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });

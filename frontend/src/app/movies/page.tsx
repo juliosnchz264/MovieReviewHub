@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useInfiniteMovies } from "@/features/movies/hooks/useInfiniteMovies";
 import { MovieGridSkeleton } from "@/features/movies/components/MovieCardSkeleton";
 import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { Navbar } from "@/components/navbar";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIntersection } from "@/hooks/useIntersection";
@@ -122,6 +123,11 @@ export default function MoviesPage() {
                 <div className="absolute right-2 top-2 z-10">
                   <CardActionsMenu kind="MOVIE" targetId={movie.id} />
                 </div>
+                <MyRatingDisplay
+                  kind="MOVIE"
+                  targetId={movie.id}
+                  className="absolute left-2 top-2 z-10"
+                />
                 <Link href={`/movies/${movie.id}`} className="block">
                   <div className="relative aspect-2/3 bg-muted">
                     {movie.imageUrl ? (

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tansta
 import { toast } from "sonner";
 import { reviewsService } from "@/features/reviews/services/reviews.service";
 import { useAuthStore } from "@/store/auth";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { ReviewRequest } from "@/types/review";
 
 export function useMovieReviews(movieId: number, page = 0, size = 20) {
@@ -77,6 +78,7 @@ export function useMyMovieReview(movieId: number) {
 
 export function useUpsertMovieRating(movieId: number) {
   const qc = useQueryClient();
+  const t = useTranslate();
   return useMutation({
     mutationFn: async (rating: number) => {
       const existing = qc.getQueryData<{ id: number; comment: string | null } | null>([
@@ -93,16 +95,17 @@ export function useUpsertMovieRating(movieId: number) {
       const had = qc.getQueryData(["my-review", "movie", movieId]);
       qc.invalidateQueries({ queryKey: ["my-review", "movie", movieId] });
       invalidateReviewQueries(qc, movieId);
-      toast.success(had ? "Rating updated" : "Rating saved");
+      toast.success(had ? t("toasts.ratingUpdated") : t("toasts.ratingSaved"));
     },
     onError: () => {
-      toast.error("Could not save rating");
+      toast.error(t("toasts.ratingError"));
     },
   });
 }
 
 export function useRemoveMovieRating(movieId: number) {
   const qc = useQueryClient();
+  const t = useTranslate();
   return useMutation({
     mutationFn: async () => {
       const existing = qc.getQueryData<{ id: number } | null>([
@@ -116,10 +119,10 @@ export function useRemoveMovieRating(movieId: number) {
     onSuccess: () => {
       qc.setQueryData(["my-review", "movie", movieId], null);
       invalidateReviewQueries(qc, movieId);
-      toast.success("Rating removed");
+      toast.success(t("toasts.ratingRemoved"));
     },
     onError: () => {
-      toast.error("Could not remove rating");
+      toast.error(t("toasts.ratingError"));
     },
   });
 }

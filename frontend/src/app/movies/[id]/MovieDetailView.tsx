@@ -18,7 +18,8 @@ import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { ReviewList } from "@/features/reviews/components/ReviewList";
 import { MovieRow } from "@/features/movies/components/MovieRow";
-import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
 import { Navbar } from "@/components/navbar";
 import { useTranslate } from "@/hooks/useTranslate";
@@ -106,8 +107,10 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
                 <p className="leading-relaxed text-foreground/80">{movie.description}</p>
               )}
 
+              <MyRatingDisplay kind="MOVIE" targetId={movie.id} variant="panel" />
+
               <div className="flex flex-wrap gap-2">
-                <FavoriteButton movieId={movie.id} />
+                <MediaFavoriteButton kind="MOVIE" targetId={movie.id} />
                 <AddToListPopover kind="MOVIE" targetId={movie.id} />
               </div>
             </div>

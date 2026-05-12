@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { cn } from "@/lib/utils";
 import type { Series } from "@/types/series";
 
@@ -51,6 +52,11 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
               <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
                 <CardActionsMenu kind="SERIES" targetId={s.id} />
               </div>
+              <MyRatingDisplay
+                kind="SERIES"
+                targetId={s.id}
+                className="absolute left-1.5 top-1.5 z-10"
+              />
               <Link href={`/series/${s.id}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {s.imageUrl ? (

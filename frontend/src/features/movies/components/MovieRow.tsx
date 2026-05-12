@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { cn } from "@/lib/utils";
 import type { Movie } from "@/types/movie";
 
@@ -51,6 +52,11 @@ export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Prop
               <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
                 <CardActionsMenu kind="MOVIE" targetId={movie.id} />
               </div>
+              <MyRatingDisplay
+                kind="MOVIE"
+                targetId={movie.id}
+                className="absolute left-1.5 top-1.5 z-10"
+              />
               <Link href={`/movies/${movie.id}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {movie.imageUrl ? (

@@ -6,6 +6,7 @@ import Image from "next/image";
 import { Navbar } from "@/components/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
+import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { useInfiniteSeries } from "@/features/series/hooks/useSeries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useIntersection } from "@/hooks/useIntersection";
@@ -127,6 +128,11 @@ export default function SeriesPage() {
                   <div className="absolute right-2 top-2 z-10">
                     <CardActionsMenu kind="SERIES" targetId={s.id} />
                   </div>
+                  <MyRatingDisplay
+                    kind="SERIES"
+                    targetId={s.id}
+                    className="absolute left-2 top-2 z-10"
+                  />
                   <Link href={`/series/${s.id}`} className="block">
                     <div className="relative aspect-2/3 bg-muted">
                       {s.imageUrl ? (

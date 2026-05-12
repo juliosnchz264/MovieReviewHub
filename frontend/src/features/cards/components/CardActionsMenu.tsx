@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth";
+import { useTranslate } from "@/hooks/useTranslate";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ListPickerSection } from "@/features/lists/components/ListPickerSection";
 import { ListFormDialog, type ListFormValues } from "@/features/lists/components/ListFormDialog";
@@ -55,6 +56,7 @@ interface Props {
 
 export function CardActionsMenu({ kind, targetId, className }: Props) {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const t = useTranslate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showPicker, setShowPicker] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -72,7 +74,7 @@ export function CardActionsMenu({ kind, targetId, className }: Props) {
       visibility: values.visibility,
     });
     await listsService.addItem(created.id, { kind, targetId });
-    toast.success(`Added to "${created.title}"`);
+    toast.success(t("toasts.addedToList", { title: created.title }));
   }
 
   const inAnyList = (inMyLists.data ?? []).length > 0;
@@ -84,7 +86,7 @@ export function CardActionsMenu({ kind, targetId, className }: Props) {
           <DropdownMenuTrigger asChild>
             <button
               type="button"
-              aria-label="More actions"
+              aria-label={t("actions.moreActions")}
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
@@ -116,7 +118,7 @@ export function CardActionsMenu({ kind, targetId, className }: Props) {
               }}
             >
               <ListOrdered className="size-4" />
-              <span>Add to List</span>
+              <span>{t("actions.addToList")}</span>
             </DropdownMenuItem>
 
             <FavoriteRow kind={kind} targetId={targetId} />
@@ -131,7 +133,7 @@ export function CardActionsMenu({ kind, targetId, className }: Props) {
               }}
             >
               <Star className="size-4" />
-              <span>Your Rating</span>
+              <span>{t("actions.yourRating")}</span>
             </DropdownMenuItem>
 
             {ratingExpanded && (
@@ -171,6 +173,7 @@ function FavoriteRow({ kind, targetId }: { kind: ListItemKind; targetId: number 
 }
 
 function MovieFavoriteRow({ movieId }: { movieId: number }) {
+  const t = useTranslate();
   const { data: isFavorite } = useIsFavorite(movieId);
   const toggle = useToggleFavorite(movieId);
   return (
@@ -187,12 +190,13 @@ function MovieFavoriteRow({ movieId }: { movieId: number }) {
           isFavorite ? "fill-red-500 text-red-500" : "text-foreground/60"
         )}
       />
-      <span>Favorite</span>
+      <span>{t("actions.favorite")}</span>
     </DropdownMenuItem>
   );
 }
 
 function SeriesFavoriteRow({ seriesId }: { seriesId: number }) {
+  const t = useTranslate();
   const { data: isFavorite } = useIsSeriesFavorite(seriesId);
   const toggle = useToggleSeriesFavorite(seriesId);
   return (
@@ -209,12 +213,13 @@ function SeriesFavoriteRow({ seriesId }: { seriesId: number }) {
           isFavorite ? "fill-red-500 text-red-500" : "text-foreground/60"
         )}
       />
-      <span>Favorite</span>
+      <span>{t("actions.favorite")}</span>
     </DropdownMenuItem>
   );
 }
 
 function WatchlistRow({ kind, targetId }: { kind: ListItemKind; targetId: number }) {
+  const t = useTranslate();
   const { list, toggle } = useDefaultList("WATCHLIST");
   const isIn = useIsInDefaultList("WATCHLIST", kind, targetId);
 
@@ -224,7 +229,7 @@ function WatchlistRow({ kind, targetId }: { kind: ListItemKind; targetId: number
       onSelect={(e) => {
         e.preventDefault();
         if (!list) return;
-        toggle.mutate({ kind, targetId });
+        toggle.mutate({ kind, targetId, isIn });
       }}
     >
       <Bookmark
@@ -233,7 +238,7 @@ function WatchlistRow({ kind, targetId }: { kind: ListItemKind; targetId: number
           isIn ? "fill-primary text-primary" : "text-foreground/60"
         )}
       />
-      <span>Watchlist</span>
+      <span>{t("actions.watchlist")}</span>
     </DropdownMenuItem>
   );
 }
@@ -292,6 +297,7 @@ function RatingPanelView({
   onSelect: (value: number) => void;
   onRemove: () => void;
 }) {
+  const t = useTranslate();
   return (
     <div
       className={cn(
@@ -308,7 +314,7 @@ function RatingPanelView({
         className="mb-1.5 flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-foreground/80 transition hover:bg-muted disabled:opacity-40 disabled:hover:bg-transparent"
       >
         <MinusCircle className="size-4" />
-        <span>Remove rating</span>
+        <span>{t("actions.removeRating")}</span>
       </button>
       <div className="px-2 py-1">
         {isLoading ? (

@@ -11,7 +11,7 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useMyReviews } from "@/features/reviews/hooks/useReviews";
 import { useMyFavorites } from "@/features/favorites/hooks/useFavorites";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
-import { FavoriteButton } from "@/features/favorites/components/FavoriteButton";
+import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import {
   useCreateList,
   useDeleteList,
@@ -237,8 +237,9 @@ function MyFavoritesTab() {
           key={movie.id}
           className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
         >
-          <FavoriteButton
-            movieId={movie.id}
+          <MediaFavoriteButton
+            kind="MOVIE"
+            targetId={movie.id}
             variant="icon"
             className="absolute right-2 top-2 z-10"
           />

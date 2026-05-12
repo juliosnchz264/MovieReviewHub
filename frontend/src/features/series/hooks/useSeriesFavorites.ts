@@ -7,6 +7,7 @@ import {
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { useAuthStore } from "@/store/auth";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { FavoriteCheck } from "@/types/favorite";
 import type { Series, SeriesPage } from "@/types/series";
 
@@ -51,6 +52,7 @@ export function useIsSeriesFavorite(seriesId: number) {
 
 export function useToggleSeriesFavorite(seriesId: number) {
   const qc = useQueryClient();
+  const t = useTranslate();
   const key = ["series-favorite", seriesId];
 
   return useMutation({
@@ -68,9 +70,12 @@ export function useToggleSeriesFavorite(seriesId: number) {
       qc.setQueryData(key, !isFavoriteNow);
       return { prev };
     },
+    onSuccess: (added) => {
+      toast.success(added ? t("toasts.favoriteAdded") : t("toasts.favoriteRemoved"));
+    },
     onError: (_err, _vars, ctx) => {
       qc.setQueryData(key, ctx?.prev);
-      toast.error("Could not update favorite");
+      toast.error(t("toasts.favoriteError"));
     },
     onSettled: () => {
       qc.invalidateQueries({ queryKey: key });

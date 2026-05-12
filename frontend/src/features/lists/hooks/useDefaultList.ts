@@ -5,16 +5,19 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useInMyLists, useMyLists } from "@/features/lists/hooks/useLists";
 import { listsService } from "@/features/lists/services/lists.service";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { DefaultListKind, ListItemKind } from "@/types/list";
 
 interface ToggleArgs {
   kind: ListItemKind;
   targetId: number;
+  isIn: boolean;
 }
 
 export function useDefaultList(defaultKind: DefaultListKind) {
   const qc = useQueryClient();
   const myLists = useMyLists();
+  const t = useTranslate();
 
   const list = useMemo(
     () => myLists.data?.find((l) => l.defaultKind === defaultKind) ?? null,
@@ -22,11 +25,8 @@ export function useDefaultList(defaultKind: DefaultListKind) {
   );
 
   const toggle = useMutation({
-    mutationFn: async ({ kind, targetId }: ToggleArgs) => {
+    mutationFn: async ({ kind, targetId, isIn }: ToggleArgs) => {
       if (!list) throw new Error(`Default list ${defaultKind} not found`);
-
-      const inListIds = qc.getQueryData<number[]>(["in-my-lists", kind, targetId]) ?? [];
-      const isIn = inListIds.includes(list.id);
 
       if (isIn) {
         const items = await listsService.items(list.id, 0, 100);
@@ -39,12 +39,12 @@ export function useDefaultList(defaultKind: DefaultListKind) {
       await listsService.addItem(list.id, { kind, targetId });
       return { added: true };
     },
-    onMutate: async ({ kind, targetId }) => {
+    onMutate: async ({ kind, targetId, isIn }) => {
       if (!list) return;
       const key = ["in-my-lists", kind, targetId];
       await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<number[]>(key) ?? [];
-      const next = prev.includes(list.id)
+      const next = isIn
         ? prev.filter((id) => id !== list.id)
         : [...prev, list.id];
       qc.setQueryData(key, next);
@@ -54,13 +54,16 @@ export function useDefaultList(defaultKind: DefaultListKind) {
       if (ctx?.key) qc.setQueryData(ctx.key, ctx.prev);
       toast.error(
         defaultKind === "WATCHLIST"
-          ? "Could not update Watchlist"
-          : "Could not update list"
+          ? t("toasts.watchlistError")
+          : t("toasts.watchedError")
       );
     },
     onSuccess: (result) => {
-      const label = defaultKind === "WATCHLIST" ? "Watchlist" : "Watched";
-      toast.success(result.added ? `Added to ${label}` : `Removed from ${label}`);
+      if (defaultKind === "WATCHLIST") {
+        toast.success(result.added ? t("toasts.watchlistAdded") : t("toasts.watchlistRemoved"));
+      } else {
+        toast.success(result.added ? t("toasts.watchedAdded") : t("toasts.watchedRemoved"));
+      }
     },
     onSettled: (_data, _err, vars) => {
       qc.invalidateQueries({ queryKey: ["in-my-lists", vars.kind, vars.targetId] });

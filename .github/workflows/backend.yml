@@ -93,6 +93,8 @@ jobs:
             -e DB_PASSWORD=smoke \
             -e JWT_SECRET=c21va2VfdGVzdF9zZWNyZXRfMzJfYnl0ZXNfbWluX2Jhc2U2NA== \
             -e CORS_ALLOWED_ORIGINS=http://localhost:3000 \
+            -e GOOGLE_CLIENT_ID=smoke-client-id \
+            -e GOOGLE_CLIENT_SECRET=smoke-client-secret \
             moviereviewhub-backend:smoke
 
       - name: Wait for /actuator/health

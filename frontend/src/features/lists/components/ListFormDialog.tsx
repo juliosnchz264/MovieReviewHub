@@ -29,19 +29,24 @@ const VISIBILITIES: { value: ListVisibility; label: string; hint: string }[] = [
 ];
 
 export function ListFormDialog({ open, mode, initial, onClose, onSubmit }: Props) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [visibility, setVisibility] = useState<ListVisibility>("PRIVATE");
+  const [title, setTitle] = useState(initial?.title ?? "");
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [visibility, setVisibility] = useState<ListVisibility>(initial?.visibility ?? "PRIVATE");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!open) return;
-    setTitle(initial?.title ?? "");
-    setDescription(initial?.description ?? "");
-    setVisibility(initial?.visibility ?? "PRIVATE");
-    setError(null);
-  }, [open, initial]);
+  const [prevOpen, setPrevOpen] = useState(open);
+  const [prevInitialId, setPrevInitialId] = useState(initial?.id);
+  if (open !== prevOpen || initial?.id !== prevInitialId) {
+    setPrevOpen(open);
+    setPrevInitialId(initial?.id);
+    if (open) {
+      setTitle(initial?.title ?? "");
+      setDescription(initial?.description ?? "");
+      setVisibility(initial?.visibility ?? "PRIVATE");
+      setError(null);
+    }
+  }
 
   useEffect(() => {
     if (!open) return;

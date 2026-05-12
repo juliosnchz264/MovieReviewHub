@@ -4,6 +4,7 @@ import com.moviereviewhub.config.properties.JwtProperties;
 import com.moviereviewhub.exception.ConflictException;
 import com.moviereviewhub.modules.auth.dto.RegisterRequest;
 import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
+import com.moviereviewhub.modules.list.service.DefaultListInitializer;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.dto.UserResponse;
@@ -33,6 +34,8 @@ class AuthServiceTest {
     @Mock AuthenticationManager authenticationManager;
     @Mock JwtService jwtService;
     @Mock JwtProperties jwtProperties;
+    @Mock TokenIssuer tokenIssuer;
+    @Mock DefaultListInitializer defaultListInitializer;
 
     @InjectMocks AuthService authService;
 

@@ -89,7 +89,7 @@ export function useUpsertMovieRating(movieId: number) {
       }
       return reviewsService.create(movieId, { rating, comment: null });
     },
-    onSuccess: (_data, _vars, _ctx) => {
+    onSuccess: () => {
       const had = qc.getQueryData(["my-review", "movie", movieId]);
       qc.invalidateQueries({ queryKey: ["my-review", "movie", movieId] });
       invalidateReviewQueries(qc, movieId);

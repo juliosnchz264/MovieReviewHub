@@ -13,6 +13,7 @@ import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.async.AsyncRequestNotUsableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
@@ -91,6 +92,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(
                 ErrorResponse.of(403, "Forbidden", "Access denied", req.getRequestURI())
         );
+    }
+
+    // Client disconnected mid-response (closed tab, canceled fetch). Nothing
+    // we can do — writing a body would fail too. Log at warn, suppress stack.
+    @ExceptionHandler(AsyncRequestNotUsableException.class)
+    public void handleClientDisconnect(AsyncRequestNotUsableException ex, HttpServletRequest req) {
+        log.warn("Client disconnected for {} {}: {}", req.getMethod(), req.getRequestURI(), ex.getMessage());
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)

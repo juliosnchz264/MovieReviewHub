@@ -39,7 +39,11 @@ spring:
             client-id: ${GOOGLE_CLIENT_ID:}
             client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope: openid,profile,email
-            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            # {baseUrl} usa X-Forwarded-Host. Render reescribe ese header con
+            # su propio host, asi que en prod hay que setear OAUTH2_REDIRECT_URI
+            # explicitamente al dominio publico (Vercel) para que el cookie
+            # state quede first-party.
+            redirect-uri: ${OAUTH2_REDIRECT_URI:{baseUrl}/login/oauth2/code/{registrationId}}
             authorization-grant-type: authorization_code
   servlet:
     multipart:

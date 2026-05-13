@@ -23,3 +23,54 @@ export interface MovieRatingStats {
 }
 
 export type ReviewPage = PagedResponse<Review>;
+
+export type ReviewKind = "movie" | "series";
+
+export type ReviewTargetType = "MOVIE" | "SERIES";
+
+export interface ReviewCard {
+  id: number;
+  kind: ReviewTargetType;
+  rating: number;
+  comment: string | null;
+  userId: number;
+  username: string;
+  userAvatarUrl: string | null;
+  targetId: number;
+  targetTitle: string;
+  targetPosterUrl: string | null;
+  authorFavorited: boolean;
+  likeCount: number;
+  replyCount: number;
+  likedByMe: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ReviewReply {
+  id: number;
+  userId: number;
+  username: string;
+  userAvatarUrl: string | null;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export interface ReviewReplyRequest {
+  body: string;
+}
+
+export type ReviewSort = "popular" | "recent";
+
+export type ReviewCardPage = PagedResponse<ReviewCard>;
+export type ReviewReplyPage = PagedResponse<ReviewReply>;
+
+export interface LikeState {
+  reviewId: number;
+  kind: ReviewTargetType;
+  likedByMe: boolean;
+  likeCount: number;
+}

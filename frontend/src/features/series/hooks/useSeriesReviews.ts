@@ -68,8 +68,10 @@ function invalidate(qc: ReturnType<typeof useQueryClient>, seriesId?: number) {
   if (seriesId !== undefined) {
     qc.invalidateQueries({ queryKey: ["series-reviews", "series", seriesId] });
     qc.invalidateQueries({ queryKey: ["series-reviews", "stats", seriesId] });
+    qc.invalidateQueries({ queryKey: ["my-review", "series", seriesId] });
   } else {
     qc.invalidateQueries({ queryKey: ["series-reviews"] });
+    qc.invalidateQueries({ queryKey: ["my-review", "series"] });
   }
   qc.invalidateQueries({ queryKey: ["series-reviews", "me"] });
   qc.invalidateQueries({ queryKey: ["admin", "stats"] });
@@ -106,7 +108,10 @@ export function useCreateSeriesReview(seriesId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: ReviewRequest) => seriesReviewsService.create(seriesId, payload),
-    onSuccess: () => invalidate(qc, seriesId),
+    onSuccess: (newReview) => {
+      qc.setQueryData(["my-review", "series", seriesId], newReview);
+      invalidate(qc, seriesId);
+    },
   });
 }
 
@@ -114,7 +119,10 @@ export function useUpdateSeriesReview(reviewId: number, seriesId: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: ReviewRequest) => seriesReviewsService.update(reviewId, payload),
-    onSuccess: () => invalidate(qc, seriesId),
+    onSuccess: (updated) => {
+      qc.setQueryData(["my-review", "series", seriesId], updated);
+      invalidate(qc, seriesId);
+    },
   });
 }
 
@@ -147,15 +155,16 @@ export function useUpsertSeriesRating(seriesId: number) {
         seriesId,
       ]);
       if (existing) {
-        return seriesReviewsService.update(existing.id, { rating, comment: existing.comment });
+        const updated = await seriesReviewsService.update(existing.id, { rating, comment: existing.comment });
+        return { review: updated, wasUpdate: true };
       }
-      return seriesReviewsService.create(seriesId, { rating, comment: null });
+      const created = await seriesReviewsService.create(seriesId, { rating, comment: null });
+      return { review: created, wasUpdate: false };
     },
-    onSuccess: () => {
-      const had = qc.getQueryData(["my-review", "series", seriesId]);
-      qc.invalidateQueries({ queryKey: ["my-review", "series", seriesId] });
+    onSuccess: (data) => {
+      qc.setQueryData(["my-review", "series", seriesId], data.review);
       invalidate(qc, seriesId);
-      toast.success(had ? t("toasts.ratingUpdated") : t("toasts.ratingSaved"));
+      toast.success(data.wasUpdate ? t("toasts.ratingUpdated") : t("toasts.ratingSaved"));
     },
     onError: () => {
       toast.error(t("toasts.ratingError"));

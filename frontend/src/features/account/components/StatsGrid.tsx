@@ -2,12 +2,14 @@
 
 import { Heart, MessageSquare, CalendarDays } from "lucide-react";
 import { useAccountStats } from "@/features/account/hooks/useAccountStats";
+import { useLocaleStore } from "@/store/locale";
+import { useTranslate } from "@/hooks/useTranslate";
 import { Skeleton } from "@/components/ui/skeleton";
 
-function formatDate(iso: string | undefined): string {
+function formatDate(iso: string | undefined, locale: string): string {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString(undefined, {
+    return new Date(iso).toLocaleDateString(locale, {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -18,22 +20,24 @@ function formatDate(iso: string | undefined): string {
 }
 
 export function StatsGrid() {
+  const t = useTranslate();
+  const locale = useLocaleStore((s) => s.locale);
   const { data, isLoading } = useAccountStats();
 
   const items = [
     {
-      label: "Reseñas escritas",
+      label: t("accountStats.reviewsLabel"),
       value: data?.totalReviews ?? 0,
       icon: MessageSquare,
     },
     {
-      label: "Favoritos",
+      label: t("accountStats.favoritesLabel"),
       value: data?.totalFavorites ?? 0,
       icon: Heart,
     },
     {
-      label: "Miembro desde",
-      value: formatDate(data?.memberSince),
+      label: t("accountStats.memberSinceLabel"),
+      value: formatDate(data?.memberSince, locale),
       icon: CalendarDays,
     },
   ];

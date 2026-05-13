@@ -3,10 +3,12 @@
 import { FormEvent, useMemo, useState } from "react";
 import { AxiosError } from "axios";
 import { toast } from "sonner";
+import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAvailability } from "@/features/account/hooks/useAvailability";
 import { useUpdateEmail } from "@/features/account/hooks/useAccountMutations";
+import { useTranslate } from "@/hooks/useTranslate";
 import { FieldStatus, type FieldStatusValue } from "./FieldStatus";
 import { PasswordInput } from "./PasswordInput";
 import type { ApiError } from "@/types/auth";
@@ -15,9 +17,12 @@ const EMAIL_RX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 interface Props {
   currentEmail: string;
+  hasLocalPassword: boolean;
+  providerLabel?: string;
 }
 
-export function EmailForm({ currentEmail }: Props) {
+export function EmailForm({ currentEmail, hasLocalPassword, providerLabel }: Props) {
+  const t = useTranslate();
   const [newEmail, setNewEmail] = useState(currentEmail);
   const [currentPassword, setCurrentPassword] = useState("");
   const updateEmail = useUpdateEmail();
@@ -40,11 +45,12 @@ export function EmailForm({ currentEmail }: Props) {
     return "idle";
   }, [available, isChecking, sameAsCurrent, formatValid]);
 
+  const passwordOk = hasLocalPassword ? currentPassword.length > 0 : true;
   const canSubmit =
     !sameAsCurrent &&
     formatValid &&
     available === true &&
-    currentPassword.length > 0 &&
+    passwordOk &&
     !updateEmail.isPending;
 
   function onSubmit(e: FormEvent) {
@@ -52,10 +58,12 @@ export function EmailForm({ currentEmail }: Props) {
     if (!canSubmit) return;
 
     updateEmail.mutate(
-      { newEmail: trimmed, currentPassword },
+      hasLocalPassword
+        ? { newEmail: trimmed, currentPassword }
+        : { newEmail: trimmed },
       {
         onSuccess: () => {
-          toast.success("Email actualizado. Las sesiones en otros dispositivos se cerraron.");
+          toast.success(t("security.emailUpdated"));
           setCurrentPassword("");
         },
       }
@@ -66,10 +74,19 @@ export function EmailForm({ currentEmail }: Props) {
   const errorMessage = error?.response?.data?.message;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" aria-labelledby="email-form-title">
+    <form onSubmit={onSubmit} className="space-y-4">
+      {!hasLocalPassword && (
+        <div className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-sm">
+          <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-600 dark:text-amber-400" aria-hidden />
+          <p className="text-amber-900 dark:text-amber-100">
+            {t("security.oauthEmailWarning", { provider: providerLabel ?? "OAuth" })}
+          </p>
+        </div>
+      )}
+
       <div className="space-y-1.5">
         <label htmlFor="new-email" className="text-sm font-medium">
-          Correo electrónico
+          {t("security.newEmail")}
         </label>
         <Input
           id="new-email"
@@ -84,7 +101,7 @@ export function EmailForm({ currentEmail }: Props) {
         />
         <div id="email-help">
           {trimmed.length > 0 && !formatValid && (
-            <p className="text-xs text-destructive">Formato de email inválido.</p>
+            <p className="text-xs text-destructive">{t("security.emailFormatInvalid")}</p>
           )}
         </div>
         <div id="email-status">
@@ -92,21 +109,25 @@ export function EmailForm({ currentEmail }: Props) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="email-current-pass" className="text-sm font-medium">
-          Contraseña actual
-        </label>
-        <PasswordInput
-          id="email-current-pass"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
+      {hasLocalPassword ? (
+        <div className="space-y-1.5">
+          <label htmlFor="email-current-pass" className="text-sm font-medium">
+            {t("security.currentPassword")}
+          </label>
+          <PasswordInput
+            id="email-current-pass"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+          <p className="text-xs text-muted-foreground">{t("security.emailCloseSessions")}</p>
+        </div>
+      ) : (
         <p className="text-xs text-muted-foreground">
-          Cambiar el email cierra tus sesiones activas en otros dispositivos.
+          {t("security.noCurrentPasswordHint", { provider: providerLabel ?? "OAuth" })}
         </p>
-      </div>
+      )}
 
       {errorMessage && (
         <p className="text-sm text-destructive" role="alert">
@@ -115,7 +136,7 @@ export function EmailForm({ currentEmail }: Props) {
       )}
 
       <Button type="submit" disabled={!canSubmit}>
-        {updateEmail.isPending ? "Guardando…" : "Guardar"}
+        {updateEmail.isPending ? t("security.saving") : t("security.save")}
       </Button>
     </form>
   );

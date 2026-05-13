@@ -1,6 +1,7 @@
 "use client";
 
 import { Check, Loader2, X } from "lucide-react";
+import { useTranslate } from "@/hooks/useTranslate";
 
 type Status = "idle" | "checking" | "available" | "taken" | "error";
 
@@ -9,16 +10,17 @@ interface Props {
   messages?: Partial<Record<Status, string>>;
 }
 
-const defaults: Record<Status, string> = {
-  idle: "",
-  checking: "Comprobando…",
-  available: "Disponible",
-  taken: "Ya en uso",
-  error: "No se pudo verificar",
-};
-
 export function FieldStatus({ status, messages }: Props) {
+  const t = useTranslate();
   if (status === "idle") return null;
+
+  const defaults: Record<Status, string> = {
+    idle: "",
+    checking: t("security.statusChecking"),
+    available: t("security.statusAvailable"),
+    taken: t("security.statusTaken"),
+    error: t("security.statusError"),
+  };
   const text = messages?.[status] ?? defaults[status];
 
   const icon = {

@@ -1,17 +1,18 @@
 "use client";
 
+import { useTranslate } from "@/hooks/useTranslate";
+
 interface Props {
   password: string;
 }
 
 interface Score {
   level: 0 | 1 | 2 | 3 | 4;
-  label: string;
   color: string;
 }
 
 function scorePassword(pw: string): Score {
-  if (!pw) return { level: 0, label: "", color: "bg-muted" };
+  if (!pw) return { level: 0, color: "bg-muted" };
 
   let s = 0;
   if (pw.length >= 8) s++;
@@ -21,27 +22,39 @@ function scorePassword(pw: string): Score {
   if (/[^A-Za-z0-9]/.test(pw)) s++;
 
   const level = Math.min(s, 4) as Score["level"];
-  const map: Record<Score["level"], { label: string; color: string }> = {
-    0: { label: "", color: "bg-muted" },
-    1: { label: "Muy débil", color: "bg-destructive" },
-    2: { label: "Débil", color: "bg-orange-500" },
-    3: { label: "Aceptable", color: "bg-yellow-500" },
-    4: { label: "Fuerte", color: "bg-emerald-500" },
+  const colors: Record<Score["level"], string> = {
+    0: "bg-muted",
+    1: "bg-destructive",
+    2: "bg-orange-500",
+    3: "bg-yellow-500",
+    4: "bg-emerald-500",
   };
-  return { level, ...map[level] };
+  return { level, color: colors[level] };
 }
 
 export function PasswordStrengthMeter({ password }: Props) {
-  const { level, label, color } = scorePassword(password);
+  const t = useTranslate();
+  const { level, color } = scorePassword(password);
 
   if (!password) return null;
+
+  const labelKey = (
+    [
+      "",
+      "security.passwordStrengthVeryWeak",
+      "security.passwordStrengthWeak",
+      "security.passwordStrengthOk",
+      "security.passwordStrengthStrong",
+    ] as const
+  )[level];
+  const label = labelKey ? t(labelKey) : "";
 
   return (
     <div
       className="space-y-1"
       role="status"
       aria-live="polite"
-      aria-label={`Password strength: ${label}`}
+      aria-label={label}
     >
       <div className="flex gap-1">
         {[1, 2, 3, 4].map((n) => (
@@ -57,7 +70,7 @@ export function PasswordStrengthMeter({ password }: Props) {
         <p className="text-xs text-muted-foreground">
           {label}
           <span className="ml-2 text-muted-foreground/60">
-            (mínimo 8 caracteres, combina mayúsculas, números y símbolos)
+            ({t("security.passwordStrengthHint")})
           </span>
         </p>
       )}

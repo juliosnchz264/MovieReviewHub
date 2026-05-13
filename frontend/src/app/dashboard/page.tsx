@@ -130,7 +130,11 @@ export default function DashboardPage() {
                     </span>
                   }
                 >
-                  <UsernameForm currentUsername={user.username} />
+                  <UsernameForm
+                    currentUsername={user.username}
+                    hasLocalPassword={user.hasPassword}
+                    providerLabel={user.provider ?? undefined}
+                  />
                 </AccountSection>
 
                 <AccountSection
@@ -143,7 +147,11 @@ export default function DashboardPage() {
                     </span>
                   }
                 >
-                  <EmailForm currentEmail={user.email} />
+                  <EmailForm
+                    currentEmail={user.email}
+                    hasLocalPassword={user.hasPassword}
+                    providerLabel={user.provider ?? undefined}
+                  />
                 </AccountSection>
 
                 <AccountSection
@@ -164,7 +172,11 @@ export default function DashboardPage() {
                 <h2 className="text-sm font-medium uppercase tracking-wide text-destructive/80">
                   Zona de peligro
                 </h2>
-                <DeleteAccountSection username={user.username} />
+                <DeleteAccountSection
+                  username={user.username}
+                  hasLocalPassword={user.hasPassword}
+                  providerLabel={user.provider ?? undefined}
+                />
               </div>
             </>
           )}

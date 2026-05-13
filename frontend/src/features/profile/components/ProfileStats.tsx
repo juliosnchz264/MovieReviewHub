@@ -1,6 +1,7 @@
 "use client";
 
 import { Film, Star, Tv } from "lucide-react";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { PublicProfile } from "@/types/user";
 
 interface Props {
@@ -8,24 +9,25 @@ interface Props {
 }
 
 export function ProfileStats({ profile }: Props) {
+  const t = useTranslate();
   const stats = [
     {
       icon: Film,
-      label: "Promedio películas",
+      label: t("profile.averageMovies"),
       value: formatScore(profile.averageMovieScore),
-      sub: pluralReviews(profile.totalMovieReviews),
+      sub: pluralReviews(profile.totalMovieReviews, t),
     },
     {
       icon: Tv,
-      label: "Promedio series",
+      label: t("profile.averageSeries"),
       value: formatScore(profile.averageTvScore),
-      sub: pluralReviews(profile.totalTvReviews),
+      sub: pluralReviews(profile.totalTvReviews, t),
     },
     {
       icon: Star,
-      label: "Listas públicas",
+      label: t("profile.publicLists"),
       value: profile.totalPublicLists.toString(),
-      sub: profile.totalPublicLists === 1 ? "lista" : "listas",
+      sub: "",
     },
   ];
 
@@ -42,7 +44,7 @@ export function ProfileStats({ profile }: Props) {
               {s.label}
             </span>
             <span className="text-lg font-semibold leading-tight">{s.value}</span>
-            <span className="text-xs text-muted-foreground">{s.sub}</span>
+            {s.sub && <span className="text-xs text-muted-foreground">{s.sub}</span>}
           </div>
         </div>
       ))}
@@ -55,6 +57,7 @@ function formatScore(score: number | null): string {
   return `${score.toFixed(1)} / 5`;
 }
 
-function pluralReviews(n: number): string {
-  return n === 1 ? "1 reseña" : `${n} reseñas`;
+function pluralReviews(n: number, t: (k: string, v?: Record<string, string | number>) => string): string {
+  if (n === 1) return t("movieDetail.ratingCountOne", { n });
+  return t("movieDetail.ratingCountMany", { n });
 }

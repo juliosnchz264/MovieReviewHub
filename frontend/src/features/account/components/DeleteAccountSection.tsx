@@ -8,33 +8,37 @@ import { AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDeleteAccount } from "@/features/account/hooks/useAccountMutations";
+import { useTranslate } from "@/hooks/useTranslate";
 import { PasswordInput } from "./PasswordInput";
 import type { ApiError } from "@/types/auth";
 
-const CONFIRM_TOKEN = "ELIMINAR";
-
 interface Props {
   username: string;
+  hasLocalPassword: boolean;
+  providerLabel?: string;
 }
 
-export function DeleteAccountSection({ username }: Props) {
+export function DeleteAccountSection({ username, hasLocalPassword, providerLabel }: Props) {
+  const t = useTranslate();
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [confirmText, setConfirmText] = useState("");
   const [password, setPassword] = useState("");
   const del = useDeleteAccount();
 
+  const confirmToken = t("security.deleteConfirmToken");
+  const passwordOk = hasLocalPassword ? password.length > 0 : true;
   const canDelete =
-    confirmText === CONFIRM_TOKEN && password.length > 0 && !del.isPending;
+    confirmText === confirmToken && passwordOk && !del.isPending;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canDelete) return;
     del.mutate(
-      { currentPassword: password },
+      hasLocalPassword ? { currentPassword: password } : {},
       {
         onSuccess: () => {
-          toast.success("Cuenta eliminada. Adiós.");
+          toast.success(t("security.deleted"));
           qc.clear();
           window.location.assign("/");
         },
@@ -50,31 +54,24 @@ export function DeleteAccountSection({ username }: Props) {
       <div className="flex items-start gap-3">
         <AlertTriangle className="mt-0.5 size-5 text-destructive" aria-hidden />
         <div className="flex-1 space-y-1">
-          <h3 className="font-medium text-destructive">Eliminar cuenta</h3>
-          <p className="text-sm text-muted-foreground">
-            Acción permanente. Tus reviews y favoritos serán anonimizados y no
-            podrás recuperar la cuenta.
-          </p>
+          <h3 className="font-medium text-destructive">{t("security.deleteTitle")}</h3>
+          <p className="text-sm text-muted-foreground">{t("security.deleteDesc")}</p>
         </div>
       </div>
 
       {!open ? (
         <div className="mt-4">
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => setOpen(true)}
-          >
-            Quiero eliminar mi cuenta
+          <Button type="button" variant="destructive" onClick={() => setOpen(true)}>
+            {t("security.deleteCta")}
           </Button>
         </div>
       ) : (
         <form onSubmit={onSubmit} className="mt-4 space-y-4">
           <div className="space-y-1.5">
             <label htmlFor="del-confirm" className="text-sm font-medium">
-              Para confirmar, escribe{" "}
+              {t("security.deleteConfirmPrompt")}{" "}
               <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-semibold">
-                {CONFIRM_TOKEN}
+                {confirmToken}
               </code>
             </label>
             <Input
@@ -85,22 +82,29 @@ export function DeleteAccountSection({ username }: Props) {
               aria-describedby="del-username-hint"
             />
             <p id="del-username-hint" className="text-xs text-muted-foreground">
-              Cuenta: <span className="font-mono">{username}</span>
+              {t("security.deleteAccountLabel")}:{" "}
+              <span className="font-mono">{username}</span>
             </p>
           </div>
 
-          <div className="space-y-1.5">
-            <label htmlFor="del-pass" className="text-sm font-medium">
-              Contraseña actual
-            </label>
-            <PasswordInput
-              id="del-pass"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
+          {hasLocalPassword ? (
+            <div className="space-y-1.5">
+              <label htmlFor="del-pass" className="text-sm font-medium">
+                {t("security.currentPassword")}
+              </label>
+              <PasswordInput
+                id="del-pass"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              {t("security.deleteHintOauth", { provider: providerLabel ?? "OAuth" })}
+            </p>
+          )}
 
           {errorMessage && (
             <p className="text-sm text-destructive" role="alert">
@@ -118,10 +122,10 @@ export function DeleteAccountSection({ username }: Props) {
                 setPassword("");
               }}
             >
-              Cancelar
+              {t("security.deleteCancel")}
             </Button>
             <Button type="submit" variant="destructive" disabled={!canDelete}>
-              {del.isPending ? "Eliminando…" : "Eliminar cuenta definitivamente"}
+              {del.isPending ? t("security.deleting") : t("security.deleteSubmit")}
             </Button>
           </div>
         </form>

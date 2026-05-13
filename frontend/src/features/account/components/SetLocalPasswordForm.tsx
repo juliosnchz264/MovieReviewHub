@@ -5,42 +5,40 @@ import { AxiosError } from "axios";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { useChangePassword } from "@/features/account/hooks/useAccountMutations";
+import { useSetLocalPassword } from "@/features/account/hooks/useAccountMutations";
 import { useAuthStore } from "@/store/auth";
 import { useTranslate } from "@/hooks/useTranslate";
 import { PasswordInput } from "./PasswordInput";
 import { PasswordStrengthMeter } from "./PasswordStrengthMeter";
 import type { ApiError } from "@/types/auth";
 
-export function PasswordForm() {
+interface Props {
+  providerLabel?: string;
+}
+
+export function SetLocalPasswordForm({ providerLabel }: Props) {
   const t = useTranslate();
   const qc = useQueryClient();
   const clearAuth = useAuthStore((s) => s.clear);
-  const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirm, setConfirm] = useState("");
-  const change = useChangePassword();
+  const set = useSetLocalPassword();
 
   const minLengthOk = newPassword.length >= 8;
   const matchesConfirm = newPassword === confirm && confirm.length > 0;
-  const differentFromCurrent = newPassword !== currentPassword || newPassword === "";
 
   const canSubmit =
-    currentPassword.length > 0 &&
-    minLengthOk &&
-    matchesConfirm &&
-    differentFromCurrent &&
-    !change.isPending;
+    minLengthOk && matchesConfirm && !set.isPending;
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!canSubmit) return;
 
-    change.mutate(
-      { currentPassword, newPassword },
+    set.mutate(
+      { newPassword },
       {
         onSuccess: () => {
-          toast.success(t("security.passwordChanged"));
+          toast.success(t("security.setPasswordSaved"));
           clearAuth();
           qc.clear();
           window.location.assign("/login");
@@ -49,55 +47,43 @@ export function PasswordForm() {
     );
   }
 
-  const error = change.error as AxiosError<ApiError> | null;
-  const errorMessage = error?.response?.data?.message;
+  const error = set.error as AxiosError<ApiError> | null;
+  const errorMessage = error?.response?.data?.message ?? (set.isError ? t("security.setPasswordError") : null);
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      <div className="space-y-1.5">
-        <label htmlFor="current-pass" className="text-sm font-medium">
-          {t("security.currentPassword")}
-        </label>
-        <PasswordInput
-          id="current-pass"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
-      </div>
+      <p className="text-sm text-muted-foreground">
+        {t("security.setPasswordDesc", { provider: providerLabel ?? "OAuth" })}
+      </p>
 
       <div className="space-y-1.5">
-        <label htmlFor="new-pass" className="text-sm font-medium">
+        <label htmlFor="set-new-pass" className="text-sm font-medium">
           {t("security.newPassword")}
         </label>
         <PasswordInput
-          id="new-pass"
+          id="set-new-pass"
           autoComplete="new-password"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
           required
           minLength={8}
           maxLength={100}
-          aria-describedby="new-pass-help"
+          aria-describedby="set-new-pass-help"
         />
-        <div id="new-pass-help">
+        <div id="set-new-pass-help">
           <PasswordStrengthMeter password={newPassword} />
           {newPassword.length > 0 && !minLengthOk && (
             <p className="text-xs text-destructive">{t("security.passwordMinLength")}</p>
-          )}
-          {newPassword.length > 0 && !differentFromCurrent && (
-            <p className="text-xs text-destructive">{t("security.passwordMustDiffer")}</p>
           )}
         </div>
       </div>
 
       <div className="space-y-1.5">
-        <label htmlFor="confirm-pass" className="text-sm font-medium">
+        <label htmlFor="set-confirm-pass" className="text-sm font-medium">
           {t("security.confirmPassword")}
         </label>
         <PasswordInput
-          id="confirm-pass"
+          id="set-confirm-pass"
           autoComplete="new-password"
           value={confirm}
           onChange={(e) => setConfirm(e.target.value)}
@@ -116,7 +102,7 @@ export function PasswordForm() {
       )}
 
       <Button type="submit" disabled={!canSubmit}>
-        {change.isPending ? t("security.changing") : t("security.changePassword")}
+        {set.isPending ? t("security.setPasswordSaving") : t("security.setPasswordCta")}
       </Button>
     </form>
   );

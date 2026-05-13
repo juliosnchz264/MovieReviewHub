@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAvailability } from "@/features/account/hooks/useAvailability";
 import { useUpdateUsername } from "@/features/account/hooks/useAccountMutations";
+import { useTranslate } from "@/hooks/useTranslate";
 import { FieldStatus, type FieldStatusValue } from "./FieldStatus";
 import { PasswordInput } from "./PasswordInput";
 import type { ApiError } from "@/types/auth";
@@ -15,9 +16,12 @@ const USERNAME_RX = /^[A-Za-z0-9_.-]+$/;
 
 interface Props {
   currentUsername: string;
+  hasLocalPassword: boolean;
+  providerLabel?: string;
 }
 
-export function UsernameForm({ currentUsername }: Props) {
+export function UsernameForm({ currentUsername, hasLocalPassword, providerLabel }: Props) {
+  const t = useTranslate();
   const [newUsername, setNewUsername] = useState(currentUsername);
   const [currentPassword, setCurrentPassword] = useState("");
   const updateUsername = useUpdateUsername();
@@ -40,12 +44,13 @@ export function UsernameForm({ currentUsername }: Props) {
     return "idle";
   }, [available, isChecking, sameAsCurrent, lengthValid, formatValid]);
 
+  const passwordOk = hasLocalPassword ? currentPassword.length > 0 : true;
   const canSubmit =
     !sameAsCurrent &&
     lengthValid &&
     formatValid &&
     available === true &&
-    currentPassword.length > 0 &&
+    passwordOk &&
     !updateUsername.isPending;
 
   function onSubmit(e: FormEvent) {
@@ -53,10 +58,12 @@ export function UsernameForm({ currentUsername }: Props) {
     if (!canSubmit) return;
 
     updateUsername.mutate(
-      { newUsername: trimmed, currentPassword },
+      hasLocalPassword
+        ? { newUsername: trimmed, currentPassword }
+        : { newUsername: trimmed },
       {
         onSuccess: () => {
-          toast.success("Username actualizado");
+          toast.success(t("security.usernameUpdated"));
           setCurrentPassword("");
         },
       }
@@ -67,10 +74,10 @@ export function UsernameForm({ currentUsername }: Props) {
   const errorMessage = error?.response?.data?.message;
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" aria-labelledby="username-form-title">
+    <form onSubmit={onSubmit} className="space-y-4">
       <div className="space-y-1.5">
         <label htmlFor="new-username" className="text-sm font-medium">
-          Nombre de usuario
+          {t("security.newUsername")}
         </label>
         <Input
           id="new-username"
@@ -83,12 +90,10 @@ export function UsernameForm({ currentUsername }: Props) {
         />
         <div id="username-help" className="space-y-0.5">
           {!lengthValid && trimmed.length > 0 && (
-            <p className="text-xs text-destructive">Entre 3 y 50 caracteres.</p>
+            <p className="text-xs text-destructive">{t("security.usernameLengthInvalid")}</p>
           )}
           {trimmed.length > 0 && !formatValid && (
-            <p className="text-xs text-destructive">
-              Solo letras, números, punto, guion y guion bajo.
-            </p>
+            <p className="text-xs text-destructive">{t("security.usernameFormatInvalid")}</p>
           )}
         </div>
         <div id="username-status">
@@ -96,21 +101,25 @@ export function UsernameForm({ currentUsername }: Props) {
         </div>
       </div>
 
-      <div className="space-y-1.5">
-        <label htmlFor="username-current-pass" className="text-sm font-medium">
-          Contraseña actual
-        </label>
-        <PasswordInput
-          id="username-current-pass"
-          autoComplete="current-password"
-          value={currentPassword}
-          onChange={(e) => setCurrentPassword(e.target.value)}
-          required
-        />
+      {hasLocalPassword ? (
+        <div className="space-y-1.5">
+          <label htmlFor="username-current-pass" className="text-sm font-medium">
+            {t("security.currentPassword")}
+          </label>
+          <PasswordInput
+            id="username-current-pass"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+            required
+          />
+          <p className="text-xs text-muted-foreground">{t("security.currentPasswordHint")}</p>
+        </div>
+      ) : (
         <p className="text-xs text-muted-foreground">
-          Confirmamos tu identidad para cambios sensibles.
+          {t("security.noCurrentPasswordHint", { provider: providerLabel ?? "OAuth" })}
         </p>
-      </div>
+      )}
 
       {errorMessage && (
         <p className="text-sm text-destructive" role="alert">
@@ -119,7 +128,7 @@ export function UsernameForm({ currentUsername }: Props) {
       )}
 
       <Button type="submit" disabled={!canSubmit}>
-        {updateUsername.isPending ? "Guardando…" : "Guardar"}
+        {updateUsername.isPending ? t("security.saving") : t("security.save")}
       </Button>
     </form>
   );

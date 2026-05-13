@@ -38,6 +38,12 @@ export function useChangePassword() {
   });
 }
 
+export function useSetLocalPassword() {
+  return useMutation({
+    mutationFn: accountService.setLocalPassword,
+  });
+}
+
 export function useDeleteAccount() {
   const clear = useAuthStore((s) => s.clear);
   return useMutation({

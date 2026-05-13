@@ -4,6 +4,7 @@ import { forwardRef, useState, type KeyboardEvent } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { Input, type InputProps } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { useTranslate } from "@/hooks/useTranslate";
 
 interface PasswordInputProps extends InputProps {
   showCapsLockHint?: boolean;
@@ -15,7 +16,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     {
       className,
       showCapsLockHint = false,
-      capsLockMessage = "Bloq Mayús está activado",
+      capsLockMessage,
       onKeyDown,
       onKeyUp,
       onBlur,
@@ -23,8 +24,10 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
     },
     ref
   ) {
+    const t = useTranslate();
     const [visible, setVisible] = useState(false);
     const [capsOn, setCapsOn] = useState(false);
+    const capsMsg = capsLockMessage ?? t("security.capsLockOn");
 
     function detectCaps(e: KeyboardEvent<HTMLInputElement>) {
       if (!showCapsLockHint) return;
@@ -59,7 +62,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? "Ocultar contraseña" : "Mostrar contraseña"}
+            aria-label={visible ? t("security.hidePassword") : t("security.showPassword")}
             aria-pressed={visible}
             className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground focus-visible:text-foreground outline-none"
             tabIndex={-1}
@@ -73,7 +76,7 @@ export const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
             aria-live="polite"
             className="text-xs text-amber-500 dark:text-amber-400"
           >
-            {capsLockMessage}
+            {capsMsg}
           </p>
         )}
       </div>

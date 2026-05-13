@@ -6,6 +6,11 @@ export interface User {
   email: string;
   role: UserRole;
   profileCompleted: boolean;
+  handle: string | null;
+  avatarUrl: string | null;
+  themeColor: string | null;
+  provider: string | null;
+  hasPassword: boolean;
 }
 
 export interface AuthResponse {

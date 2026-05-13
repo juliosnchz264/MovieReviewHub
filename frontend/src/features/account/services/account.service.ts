@@ -5,6 +5,7 @@ import type {
   AvailabilityResponse,
   ChangePasswordRequest,
   DeleteAccountRequest,
+  SetPasswordRequest,
   UpdateEmailRequest,
   UpdateUsernameRequest,
 } from "@/types/account";
@@ -43,6 +44,10 @@ export const accountService = {
 
   async changePassword(payload: ChangePasswordRequest): Promise<void> {
     await api.patch("/users/me/password", payload);
+  },
+
+  async setLocalPassword(payload: SetPasswordRequest): Promise<void> {
+    await api.post("/users/me/password/set", payload);
   },
 
   async deleteAccount(payload: DeleteAccountRequest): Promise<void> {

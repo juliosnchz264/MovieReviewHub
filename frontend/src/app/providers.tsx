@@ -7,6 +7,7 @@ import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { SessionInit } from "@/components/session-init";
 import { ProfileGate } from "@/components/profile-gate";
+import { LocaleSync } from "@/components/locale-sync";
 
 export function Providers({ children }: { children: ReactNode }) {
   const [client] = useState(
@@ -26,6 +27,7 @@ export function Providers({ children }: { children: ReactNode }) {
     <ThemeProvider>
       <QueryClientProvider client={client}>
         <SessionInit>
+          <LocaleSync />
           <ProfileGate>{children}</ProfileGate>
         </SessionInit>
         <Toaster richColors position="top-right" />

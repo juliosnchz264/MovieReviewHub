@@ -1,11 +1,11 @@
 export interface UpdateUsernameRequest {
   newUsername: string;
-  currentPassword: string;
+  currentPassword?: string;
 }
 
 export interface UpdateEmailRequest {
   newEmail: string;
-  currentPassword: string;
+  currentPassword?: string;
 }
 
 export interface ChangePasswordRequest {
@@ -13,8 +13,12 @@ export interface ChangePasswordRequest {
   newPassword: string;
 }
 
+export interface SetPasswordRequest {
+  newPassword: string;
+}
+
 export interface DeleteAccountRequest {
-  currentPassword: string;
+  currentPassword?: string;
 }
 
 export interface AvailabilityResponse {

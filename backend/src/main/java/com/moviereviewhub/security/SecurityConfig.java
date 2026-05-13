@@ -61,6 +61,15 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/people/**").permitAll()
+                        // Public read of single reviews, their replies, and like state
+                        // (movie + series). Mutations (POST/PUT/DELETE) still hit
+                        // .anyRequest().authenticated().
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/*/replies").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/*/like").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reviews/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*/replies").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*/like").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/tmdb/posters").permitAll()
                         // Lists: GET por slug + GET items + listas PUBLIC de un usuario son accesibles anon.
                         // PRIVATE manejada en service (404 si no eres owner). /users/me/lists requiere auth via anyRequest.

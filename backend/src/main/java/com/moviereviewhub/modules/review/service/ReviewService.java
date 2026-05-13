@@ -11,14 +11,24 @@ import com.moviereviewhub.modules.review.dto.MovieRatingStats;
 import com.moviereviewhub.modules.review.dto.ReviewRequest;
 import com.moviereviewhub.modules.review.dto.ReviewResponse;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
+import com.moviereviewhub.modules.reviewsocial.domain.ReviewTargetType;
+import com.moviereviewhub.modules.reviewsocial.dto.ReviewCardResponse;
+import com.moviereviewhub.modules.reviewsocial.dto.ReviewCardSource;
+import com.moviereviewhub.modules.reviewsocial.service.ReviewSocialEnrichmentService;
 import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -27,6 +37,7 @@ public class ReviewService {
     private final ReviewRepository reviewRepository;
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
+    private final ReviewSocialEnrichmentService enrichmentService;
 
     @Transactional(readOnly = true)
     public PagedResponse<ReviewResponse> findByMovie(Long movieId, Pageable pageable) {
@@ -45,6 +56,119 @@ public class ReviewService {
         MovieRatingStats stats = reviewRepository.getRatingStats(movieId);
         return stats == null ? MovieRatingStats.empty() : stats;
     }
+
+    // ------------- Social-aware endpoints -------------
+
+    @Transactional(readOnly = true)
+    public List<ReviewCardResponse> findPopularSection(
+            Long movieId, int limit, Long currentUserId) {
+        Movie movie = loadMovie(movieId);
+        List<Long> ids = reviewRepository.findPopularIds(movieId, limit);
+        return loadAndEnrich(movie, ids, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ReviewCardResponse> findRecentSection(
+            Long movieId, int limit, Long currentUserId) {
+        Movie movie = loadMovie(movieId);
+        Page<Review> page = reviewRepository.findByMovieId(movieId, PageRequest.of(0, limit));
+        List<ReviewCardSource> sources = page.getContent().stream()
+                .map(this::toSource).toList();
+        return enrichmentService.enrich(ReviewTargetType.MOVIE, movie.getId(),
+                movie.getTitle(), movie.getImageUrl(), sources, currentUserId);
+    }
+
+    @Transactional(readOnly = true)
+    public PagedResponse<ReviewCardResponse> findFeed(
+            Long movieId, String sort, Pageable pageable, Long currentUserId) {
+        Movie movie = loadMovie(movieId);
+        // Strip any Sort that Spring Data Web bound from `?sort=` — the repo
+        // queries already define their own ORDER BY and appending more breaks them.
+        Pageable safe = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
+        Page<Review> page = "popular".equalsIgnoreCase(sort)
+                ? loadPopularPage(movieId, safe)
+                : reviewRepository.findByMovieId(movieId, safe);
+        List<ReviewCardSource> sources = page.getContent().stream()
+                .map(this::toSource).toList();
+        List<ReviewCardResponse> cards = enrichmentService.enrich(
+                ReviewTargetType.MOVIE, movie.getId(), movie.getTitle(),
+                movie.getImageUrl(), sources, currentUserId);
+        return new PagedResponse<>(
+                cards,
+                page.getNumber(),
+                page.getSize(),
+                page.getTotalElements(),
+                page.getTotalPages(),
+                page.isFirst(),
+                page.isLast()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public ReviewCardResponse findCardById(Long reviewId, Long currentUserId) {
+        Review review = reviewRepository.findByIdAndDeletedFalse(reviewId)
+                .orElseThrow(() -> new NotFoundException("Review not found"));
+        Movie movie = review.getMovie();
+        return enrichmentService.enrichSingle(
+                ReviewTargetType.MOVIE,
+                movie.getId(),
+                movie.getTitle(),
+                movie.getImageUrl(),
+                toSource(review),
+                currentUserId
+        );
+    }
+
+    private Page<Review> loadPopularPage(Long movieId, Pageable pageable) {
+        Page<Long> idPage = reviewRepository.findPopularIdsPage(movieId, pageable);
+        if (idPage.isEmpty()) {
+            return new PageImpl<>(List.of(), pageable, idPage.getTotalElements());
+        }
+        List<Review> reviews = reviewRepository.findAllByIdsFetchUser(idPage.getContent());
+        Map<Long, Review> byId = new HashMap<>();
+        reviews.forEach(r -> byId.put(r.getId(), r));
+        List<Review> ordered = idPage.getContent().stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        return new PageImpl<>(ordered, pageable, idPage.getTotalElements());
+    }
+
+    private List<ReviewCardResponse> loadAndEnrich(
+            Movie movie, List<Long> ids, Long currentUserId) {
+        if (ids.isEmpty()) return List.of();
+        List<Review> reviews = reviewRepository.findAllByIdsFetchUser(ids);
+        Map<Long, Review> byId = new HashMap<>();
+        reviews.forEach(r -> byId.put(r.getId(), r));
+        List<ReviewCardSource> sources = ids.stream()
+                .map(byId::get)
+                .filter(java.util.Objects::nonNull)
+                .map(this::toSource)
+                .toList();
+        return enrichmentService.enrich(ReviewTargetType.MOVIE, movie.getId(),
+                movie.getTitle(), movie.getImageUrl(), sources, currentUserId);
+    }
+
+    private Movie loadMovie(Long movieId) {
+        return movieRepository.findByIdAndDeletedFalse(movieId)
+                .orElseThrow(() -> new NotFoundException("Movie not found"));
+    }
+
+    private ReviewCardSource toSource(Review r) {
+        User u = r.getUser();
+        return new ReviewCardSource(
+                r.getId(),
+                r.getRating(),
+                r.getComment(),
+                r.getCreatedAt(),
+                r.getUpdatedAt(),
+                u.getId(),
+                u.getUsername(),
+                u.getAvatarUrl()
+        );
+    }
+
+    // ------------- Mutations -------------
 
     @Transactional
     public ReviewResponse create(Long userId, Long movieId, ReviewRequest req) {
@@ -100,5 +224,6 @@ public class ReviewService {
         }
         review.setDeleted(true);
         reviewRepository.save(review);
+        enrichmentService.purgeForReview(ReviewTargetType.MOVIE, reviewId);
     }
 }

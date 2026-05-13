@@ -3,6 +3,7 @@ package com.moviereviewhub.modules.seriesreview.controller;
 import com.moviereviewhub.common.dto.PagedResponse;
 import com.moviereviewhub.modules.review.dto.MovieRatingStats;
 import com.moviereviewhub.modules.review.dto.ReviewRequest;
+import com.moviereviewhub.modules.reviewsocial.dto.ReviewCardResponse;
 import com.moviereviewhub.modules.seriesreview.dto.SeriesReviewResponse;
 import com.moviereviewhub.modules.seriesreview.service.SeriesReviewService;
 import com.moviereviewhub.security.userdetails.CustomUserDetails;
@@ -18,7 +19,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -32,6 +36,45 @@ public class SeriesReviewController {
             @PageableDefault(size = 20) Pageable pageable
     ) {
         return ResponseEntity.ok(reviewService.findBySeries(seriesId, pageable));
+    }
+
+    @GetMapping("/api/v1/series/{seriesId:\\d+}/reviews/popular")
+    public ResponseEntity<List<ReviewCardResponse>> popular(
+            @PathVariable Long seriesId,
+            @RequestParam(defaultValue = "3") int limit,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findPopularSection(
+                seriesId, clampLimit(limit), userId(principal)));
+    }
+
+    @GetMapping("/api/v1/series/{seriesId:\\d+}/reviews/recent")
+    public ResponseEntity<List<ReviewCardResponse>> recent(
+            @PathVariable Long seriesId,
+            @RequestParam(defaultValue = "3") int limit,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findRecentSection(
+                seriesId, clampLimit(limit), userId(principal)));
+    }
+
+    @GetMapping("/api/v1/series/{seriesId:\\d+}/reviews/feed")
+    public ResponseEntity<PagedResponse<ReviewCardResponse>> feed(
+            @PathVariable Long seriesId,
+            @RequestParam(defaultValue = "recent") String sort,
+            @PageableDefault(size = 12) Pageable pageable,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findFeed(
+                seriesId, sort, pageable, userId(principal)));
+    }
+
+    @GetMapping("/api/v1/series-reviews/{id:\\d+}")
+    public ResponseEntity<ReviewCardResponse> findOne(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(reviewService.findCardById(id, userId(principal)));
     }
 
     @GetMapping("/api/v1/series/{seriesId:\\d+}/reviews/stats")
@@ -82,5 +125,15 @@ public class SeriesReviewController {
     ) {
         reviewService.delete(id, principal.getId(), principal.getUser().getRole());
         return ResponseEntity.noContent().build();
+    }
+
+    private static Long userId(CustomUserDetails principal) {
+        return principal != null ? principal.getId() : null;
+    }
+
+    private static int clampLimit(int limit) {
+        if (limit < 1) return 1;
+        if (limit > 50) return 50;
+        return limit;
     }
 }

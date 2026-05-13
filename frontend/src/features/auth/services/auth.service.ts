@@ -8,14 +8,20 @@ import type {
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 
-// OAuth2 redirects live at the server root, not under /api/v1
-function backendOrigin(): string {
-  try {
-    const url = new URL(API_URL);
-    return `${url.protocol}//${url.host}`;
-  } catch {
-    return API_URL.replace(/\/api\/v1\/?$/, "");
+// OAuth2 redirects live at the server root, not under /api/v1. Si
+// NEXT_PUBLIC_API_URL es relativo ("/api/v1") usamos window.location.origin
+// para que los rewrites de Vercel proxyen /oauth2/* al backend (cookie
+// first-party).
+function oauthBaseOrigin(): string {
+  if (/^https?:\/\//i.test(API_URL)) {
+    try {
+      const url = new URL(API_URL);
+      return `${url.protocol}//${url.host}`;
+    } catch {
+      // fall through
+    }
   }
+  return typeof window !== "undefined" ? window.location.origin : "";
 }
 
 export const authService = {
@@ -45,7 +51,7 @@ export const authService = {
 
   loginWithGoogle(redirectTo?: string): void {
     if (typeof window === "undefined") return;
-    const url = new URL(`${backendOrigin()}/oauth2/authorization/google`);
+    const url = new URL(`${oauthBaseOrigin()}/oauth2/authorization/google`);
     if (redirectTo) {
       // server should validate this against an allow-list before honoring it
       url.searchParams.set("redirect_uri", redirectTo);

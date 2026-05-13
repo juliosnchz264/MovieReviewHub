@@ -29,6 +29,11 @@ export function ListPickerSection({ kind, targetId, onCreateClick }: Props) {
     [inMyLists.data]
   );
 
+  const visibleLists = useMemo(
+    () => (myLists.data ?? []).filter((l) => l.defaultKind !== "WATCHED"),
+    [myLists.data]
+  );
+
   return (
     <>
       <div className="border-b border-border px-3 py-2 text-xs font-medium">
@@ -39,12 +44,12 @@ export function ListPickerSection({ kind, targetId, onCreateClick }: Props) {
         {myLists.isLoading && (
           <p className="px-3 py-2 text-xs text-muted-foreground">Loading...</p>
         )}
-        {myLists.data?.length === 0 && (
+        {!myLists.isLoading && visibleLists.length === 0 && (
           <p className="px-3 py-2 text-xs text-muted-foreground">
             You have no lists yet.
           </p>
         )}
-        {myLists.data?.map((list) => (
+        {visibleLists.map((list) => (
           <ListRow
             key={list.id}
             list={list}

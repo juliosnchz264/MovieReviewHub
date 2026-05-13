@@ -90,9 +90,11 @@ export function EditProfileForm({ profile }: Props) {
   }, [previewUrl]);
 
   const avatarUrl = previewUrl ?? profile.avatarUrl;
-  useEffect(() => {
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(avatarUrl);
+  if (avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(avatarUrl);
     setAvatarBroken(false);
-  }, [avatarUrl]);
+  }
   const showAvatar = Boolean(avatarUrl) && !avatarBroken;
 
   const otherDirty = useMemo(() => {

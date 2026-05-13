@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { CalendarDays, Pencil } from "lucide-react";
@@ -28,9 +28,11 @@ export function ProfileHero({ profile, isOwner }: Props) {
   const initials = profile.username.slice(0, 2).toUpperCase();
   const accent = profile.themeColor ? themeAccent(profile.themeColor) : null;
   const [avatarBroken, setAvatarBroken] = useState(false);
-  useEffect(() => {
+  const [prevAvatarUrl, setPrevAvatarUrl] = useState(profile.avatarUrl);
+  if (profile.avatarUrl !== prevAvatarUrl) {
+    setPrevAvatarUrl(profile.avatarUrl);
     setAvatarBroken(false);
-  }, [profile.avatarUrl]);
+  }
   const showAvatar = Boolean(profile.avatarUrl) && !avatarBroken;
   const hasAccent = accent !== null;
 

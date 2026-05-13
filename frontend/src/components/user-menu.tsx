@@ -215,9 +215,11 @@ function Avatar({
   size?: number;
 }) {
   const [broken, setBroken] = useState(false);
-  useEffect(() => {
+  const [prevUrl, setPrevUrl] = useState(url);
+  if (url !== prevUrl) {
+    setPrevUrl(url);
     setBroken(false);
-  }, [url]);
+  }
 
   if (url && !broken) {
     return (

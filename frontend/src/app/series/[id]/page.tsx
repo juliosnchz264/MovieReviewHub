@@ -2,37 +2,36 @@ import type { Metadata } from "next";
 import { SeriesDetailView } from "./SeriesDetailView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, seriesJsonLd } from "@/lib/seo/jsonld";
+import { backendApiBase, fetchWithTimeout } from "@/lib/server-api";
 import type { Series } from "@/types/series";
 import type { MovieRatingStats } from "@/types/review";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1";
 const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ?? "https://movie-review-hub-tau.vercel.app";
 
+// Generate on demand; backend cold-start on Render must not block the build.
+export const dynamic = "force-dynamic";
+
 async function fetchSeries(id: string): Promise<Series | null> {
   if (!Number.isFinite(Number(id))) return null;
-  try {
-    const res = await fetch(`${API_URL}/series/${id}`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as Series;
-  } catch {
-    return null;
-  }
+  const apiBase = backendApiBase();
+  if (!apiBase) return null;
+  const res = await fetchWithTimeout(`${apiBase}/series/${id}`, {
+    next: { revalidate: 300 },
+  });
+  if (!res || !res.ok) return null;
+  return (await res.json()) as Series;
 }
 
 async function fetchStats(id: string): Promise<MovieRatingStats | null> {
   if (!Number.isFinite(Number(id))) return null;
-  try {
-    const res = await fetch(`${API_URL}/series/${id}/reviews/stats`, {
-      next: { revalidate: 300 },
-    });
-    if (!res.ok) return null;
-    return (await res.json()) as MovieRatingStats;
-  } catch {
-    return null;
-  }
+  const apiBase = backendApiBase();
+  if (!apiBase) return null;
+  const res = await fetchWithTimeout(`${apiBase}/series/${id}/reviews/stats`, {
+    next: { revalidate: 300 },
+  });
+  if (!res || !res.ok) return null;
+  return (await res.json()) as MovieRatingStats;
 }
 
 export async function generateMetadata({

@@ -10,13 +10,12 @@ import { useSimilar } from "@/features/movies/hooks/useDiscover";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   useCreateReview,
-  useMovieReviews,
   useMyMovieReview,
   useRatingStats,
 } from "@/features/reviews/hooks/useReviews";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
-import { ReviewList } from "@/features/reviews/components/ReviewList";
+import { ReviewSectionsBlock } from "@/features/reviews/components/ReviewSectionsBlock";
 import { MovieRow } from "@/features/movies/components/MovieRow";
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
@@ -31,13 +30,11 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
 
   const { data: movie, isLoading, isError } = useMovie(validId ? movieId : null);
   const { data: stats } = useRatingStats(movieId);
-  const { data: reviewsPage } = useMovieReviews(movieId);
   const { data: currentUser } = useCurrentUser();
   const { data: myReview } = useMyMovieReview(movieId);
   const createReview = useCreateReview(movieId);
   const similar = useSimilar(validId ? movieId : null, 12);
 
-  const reviews = reviewsPage?.content ?? [];
   const userAlreadyReviewed = !!myReview;
 
   return (
@@ -138,7 +135,7 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
               </div>
             )}
 
-            <ReviewList reviews={reviews} movieId={movieId} />
+            <ReviewSectionsBlock kind="movie" targetId={movieId} />
           </section>
         )}
 

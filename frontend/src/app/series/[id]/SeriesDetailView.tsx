@@ -11,12 +11,11 @@ import {
   useCreateSeriesReview,
   useMySeriesReview,
   useSeriesRatingStats,
-  useSeriesReviews,
 } from "@/features/series/hooks/useSeriesReviews";
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
-import { SeriesReviewList } from "@/features/series/components/SeriesReviewList";
+import { ReviewSectionsBlock } from "@/features/reviews/components/ReviewSectionsBlock";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -30,12 +29,10 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
   const { data: series, isLoading, isError } = useSeriesItem(validId ? seriesId : null);
   const similar = useSimilarSeries(validId ? seriesId : null, 12);
   const { data: stats } = useSeriesRatingStats(seriesId);
-  const { data: reviewsPage } = useSeriesReviews(seriesId);
   const { data: currentUser } = useCurrentUser();
   const { data: myReview } = useMySeriesReview(seriesId);
   const createReview = useCreateSeriesReview(seriesId);
 
-  const reviews = reviewsPage?.content ?? [];
   const userAlreadyReviewed = !!myReview;
 
   return (
@@ -155,7 +152,7 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                 </div>
               )}
 
-              <SeriesReviewList reviews={reviews} seriesId={seriesId} />
+              <ReviewSectionsBlock kind="series" targetId={seriesId} />
             </section>
           )}
 

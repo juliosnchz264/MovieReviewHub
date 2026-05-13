@@ -21,16 +21,32 @@ export type ProfileTab =
   | "watchlist"
   | "favorites";
 
-interface Props {
-  active: ProfileTab;
+const OWNER_TABS: readonly ProfileTab[] = [
+  "overview",
+  "lists",
+  "reviews",
+  "ratings",
+  "watchlist",
+  "favorites",
+] as const;
+
+const PUBLIC_TABS: readonly ProfileTab[] = ["overview", "lists"] as const;
+
+export function getVisibleTabs(isOwner: boolean): readonly ProfileTab[] {
+  return isOwner ? OWNER_TABS : PUBLIC_TABS;
 }
 
-export function ProfileTabs({ active }: Props) {
+interface Props {
+  active: ProfileTab;
+  isOwner: boolean;
+}
+
+export function ProfileTabs({ active, isOwner }: Props) {
   const t = useTranslate();
   const pathname = usePathname();
   const params = useSearchParams();
 
-  const tabs: { key: ProfileTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
+  const allTabs: { key: ProfileTab; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
     { key: "overview", label: t("profile.overview"), icon: LayoutGrid },
     { key: "lists", label: t("profile.listsTab"), icon: List },
     { key: "reviews", label: t("profile.reviewsTab"), icon: MessageSquare },
@@ -38,6 +54,8 @@ export function ProfileTabs({ active }: Props) {
     { key: "watchlist", label: t("profile.watchlistTab"), icon: Bookmark },
     { key: "favorites", label: t("profile.favoritesTab"), icon: Heart },
   ];
+  const visible = getVisibleTabs(isOwner);
+  const tabs = allTabs.filter((tab) => visible.includes(tab.key));
 
   function hrefFor(key: ProfileTab): string {
     const sp = new URLSearchParams(params.toString());

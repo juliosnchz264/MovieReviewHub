@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Edit3, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Navbar } from "@/components/navbar";
 import { useAuthStore } from "@/store/auth";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
@@ -21,6 +22,7 @@ import {
   ListFormDialog,
   type ListFormValues,
 } from "@/features/lists/components/ListFormDialog";
+import { useTranslate } from "@/hooks/useTranslate";
 import { useRouter } from "next/navigation";
 
 interface Props {
@@ -30,6 +32,7 @@ interface Props {
 export default function ListDetailPage({ params }: Props) {
   const { slug } = use(params);
   const router = useRouter();
+  const t = useTranslate();
   const accessToken = useAuthStore((s) => s.accessToken);
   const { data: me } = useCurrentUser();
 
@@ -39,6 +42,7 @@ export default function ListDetailPage({ params }: Props) {
   const deleteList = useDeleteList();
   const removeItem = useRemoveListItem(list.data?.id ?? 0);
   const [showEdit, setShowEdit] = useState(false);
+  const [showDelete, setShowDelete] = useState(false);
 
   if (list.isLoading) {
     return (
@@ -82,14 +86,14 @@ export default function ListDetailPage({ params }: Props) {
     toast.success("List updated");
   }
 
-  async function handleDelete() {
-    if (!confirm(`Delete "${data.title}"?`)) return;
+  async function handleDeleteConfirm() {
     try {
       await deleteList.mutateAsync(data.id);
-      toast.success("List deleted");
+      toast.success(t("lists.deleted", { title: data.title }));
       router.push("/profile");
-    } catch {
-      toast.error("Could not delete");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("lists.deleteError");
+      toast.error(msg);
     }
   }
 
@@ -134,9 +138,13 @@ export default function ListDetailPage({ params }: Props) {
                     Edit
                   </Button>
                   {!data.isDefault && (
-                    <Button variant="destructive" size="sm" onClick={handleDelete}>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => setShowDelete(true)}
+                    >
                       <Trash2 className="size-4" />
-                      Delete
+                      {t("lists.deleteAction")}
                     </Button>
                   )}
                 </div>
@@ -174,13 +182,24 @@ export default function ListDetailPage({ params }: Props) {
       </main>
 
       {isOwner && (
-        <ListFormDialog
-          open={showEdit}
-          mode="edit"
-          initial={data}
-          onClose={() => setShowEdit(false)}
-          onSubmit={handleUpdate}
-        />
+        <>
+          <ListFormDialog
+            open={showEdit}
+            mode="edit"
+            initial={data}
+            onClose={() => setShowEdit(false)}
+            onSubmit={handleUpdate}
+          />
+          <ConfirmDialog
+            open={showDelete}
+            title={t("lists.confirmDeleteTitle")}
+            description={t("lists.confirmDeleteBody", { title: data.title })}
+            confirmLabel={t("lists.deleteAction")}
+            destructive
+            onConfirm={handleDeleteConfirm}
+            onClose={() => setShowDelete(false)}
+          />
+        </>
       )}
     </>
   );

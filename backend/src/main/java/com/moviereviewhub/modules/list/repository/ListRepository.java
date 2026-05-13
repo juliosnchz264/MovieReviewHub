@@ -20,7 +20,16 @@ public interface ListRepository extends JpaRepository<CustomList, Long> {
 
     List<CustomList> findAllByUserIdAndDeletedFalseOrderByIsDefaultDescUpdatedAtDesc(Long userId);
 
+    Page<CustomList> findAllByUserIdAndDeletedFalseOrderByIsDefaultDescUpdatedAtDesc(
+            Long userId, Pageable pageable);
+
+    Page<CustomList> findAllByUserIdAndIsDefaultFalseAndDeletedFalseOrderByUpdatedAtDesc(
+            Long userId, Pageable pageable);
+
     Page<CustomList> findAllByUserIdAndVisibilityAndDeletedFalse(
+            Long userId, ListVisibility visibility, Pageable pageable);
+
+    Page<CustomList> findAllByUserIdAndVisibilityAndIsDefaultFalseAndDeletedFalse(
             Long userId, ListVisibility visibility, Pageable pageable);
 
     long countByUserIdAndDeletedFalse(Long userId);

@@ -6,9 +6,14 @@ import Image from "next/image";
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ListGrid } from "@/features/lists/components/ListGrid";
-import { usePublicListsByUser, useCreateList } from "@/features/lists/hooks/useLists";
+import {
+  useListsByUser,
+  useCreateList,
+  useDeleteList,
+} from "@/features/lists/hooks/useLists";
 import { ListFormDialog, type ListFormValues } from "@/features/lists/components/ListFormDialog";
 import { useMyWatchlist } from "@/features/lists/hooks/useMyWatchlist";
 import { useMyReviews } from "@/features/reviews/hooks/useReviews";
@@ -19,6 +24,7 @@ import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { MediaKindToggle, type MediaKind } from "@/features/profile/components/MediaKindToggle";
 import { useTranslate } from "@/hooks/useTranslate";
 import type { PublicProfile } from "@/types/user";
+import type { CustomList } from "@/types/list";
 import type { ProfileTab } from "@/features/profile/components/ProfileTabs";
 
 interface Props {
@@ -81,9 +87,11 @@ function SectionHeader({
 
 function PublicListsSection({ profile, isOwner }: { profile: PublicProfile; isOwner: boolean }) {
   const t = useTranslate();
-  const listsQuery = usePublicListsByUser(profile.id);
+  const listsQuery = useListsByUser(profile.id);
   const [showCreate, setShowCreate] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<CustomList | null>(null);
   const createList = useCreateList();
+  const deleteList = useDeleteList();
 
   async function handleCreate(values: ListFormValues) {
     const created = await createList.mutateAsync({
@@ -94,6 +102,25 @@ function PublicListsSection({ profile, isOwner }: { profile: PublicProfile; isOw
     toast.success(t("lists.created", { title: created.title }));
   }
 
+  async function handleDeleteConfirm() {
+    if (!pendingDelete) return;
+    try {
+      await deleteList.mutateAsync(pendingDelete.id);
+      toast.success(t("lists.deleted", { title: pendingDelete.title }));
+      // Refresca el listado del perfil (no solo /users/me/lists).
+      listsQuery.refetch();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : t("lists.deleteError");
+      toast.error(msg);
+    }
+  }
+
+  // Owner: el endpoint devuelve PUBLIC+PRIVATE+UNLISTED, asi que totalPublicLists del
+  // perfil ya no refleja el conteo real. Tomamos totalElements del page.
+  const count = isOwner
+    ? listsQuery.data?.totalElements ?? 0
+    : profile.totalPublicLists;
+
   return (
     <section aria-labelledby="lists-heading" className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -101,8 +128,8 @@ function PublicListsSection({ profile, isOwner }: { profile: PublicProfile; isOw
           <h2 id="lists-heading" className="text-xl font-semibold tracking-tight">
             {t("profile.publicLists")}
           </h2>
-          {profile.totalPublicLists > 0 && (
-            <span className="text-sm text-muted-foreground">{profile.totalPublicLists}</span>
+          {count > 0 && (
+            <span className="text-sm text-muted-foreground">{count}</span>
           )}
         </div>
         {isOwner && (
@@ -121,18 +148,37 @@ function PublicListsSection({ profile, isOwner }: { profile: PublicProfile; isOw
       {listsQuery.isLoading ? (
         <GridSkeleton />
       ) : listsQuery.data && listsQuery.data.content.length > 0 ? (
-        <ListGrid lists={listsQuery.data.content} />
+        <ListGrid
+          lists={listsQuery.data.content}
+          canManage={isOwner}
+          onDelete={(list) => setPendingDelete(list)}
+        />
       ) : (
         <Empty message={isOwner ? t("profile.noListsOwner") : t("profile.noListsOther")} />
       )}
 
       {isOwner && (
-        <ListFormDialog
-          open={showCreate}
-          mode="create"
-          onClose={() => setShowCreate(false)}
-          onSubmit={handleCreate}
-        />
+        <>
+          <ListFormDialog
+            open={showCreate}
+            mode="create"
+            onClose={() => setShowCreate(false)}
+            onSubmit={handleCreate}
+          />
+          <ConfirmDialog
+            open={pendingDelete !== null}
+            title={t("lists.confirmDeleteTitle")}
+            description={
+              pendingDelete
+                ? t("lists.confirmDeleteBody", { title: pendingDelete.title })
+                : undefined
+            }
+            confirmLabel={t("lists.deleteAction")}
+            destructive
+            onConfirm={handleDeleteConfirm}
+            onClose={() => setPendingDelete(null)}
+          />
+        </>
       )}
     </section>
   );

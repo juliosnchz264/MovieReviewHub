@@ -79,6 +79,11 @@ export const dictionary = {
     lists: {
       createCta: "Crear lista",
       created: 'Lista "{title}" creada',
+      deleted: 'Lista "{title}" eliminada',
+      deleteError: "No se pudo eliminar la lista",
+      deleteAction: "Eliminar",
+      confirmDeleteTitle: "¿Eliminar lista?",
+      confirmDeleteBody: 'Se eliminará "{title}" permanentemente. Esta acción no se puede deshacer.',
     },
     editProfile: {
       title: "Editar perfil",
@@ -475,6 +480,11 @@ export const dictionary = {
     lists: {
       createCta: "Create list",
       created: 'List "{title}" created',
+      deleted: 'List "{title}" deleted',
+      deleteError: "Could not delete list",
+      deleteAction: "Delete",
+      confirmDeleteTitle: "Delete list?",
+      confirmDeleteBody: '"{title}" will be permanently removed. This cannot be undone.',
     },
     editProfile: {
       title: "Edit profile",

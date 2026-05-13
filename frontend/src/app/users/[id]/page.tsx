@@ -8,6 +8,7 @@ import { ProfileHero } from "@/features/profile/components/ProfileHero";
 import { ProfileStats } from "@/features/profile/components/ProfileStats";
 import {
   ProfileTabs,
+  getVisibleTabs,
   type ProfileTab,
 } from "@/features/profile/components/ProfileTabs";
 import { ProfileTabPanels } from "@/features/profile/components/ProfileTabPanels";
@@ -18,26 +19,18 @@ interface Props {
   params: Promise<{ id: string }>;
 }
 
-const VALID_TABS: ProfileTab[] = [
-  "overview",
-  "lists",
-  "reviews",
-  "ratings",
-  "watchlist",
-  "favorites",
-];
-
 export default function UserPublicProfilePage({ params }: Props) {
   const { id } = use(params);
   const userId = Number(id);
   const validId = Number.isFinite(userId) && userId > 0;
 
   const search = useSearchParams();
-  const rawTab = (search.get("tab") ?? "overview") as ProfileTab;
-  const activeTab: ProfileTab = VALID_TABS.includes(rawTab) ? rawTab : "overview";
-
   const viewerId = useAuthStore((s) => s.user?.id ?? null);
   const isOwner = viewerId === userId;
+
+  const visibleTabs = getVisibleTabs(isOwner);
+  const rawTab = (search.get("tab") ?? "overview") as ProfileTab;
+  const activeTab: ProfileTab = visibleTabs.includes(rawTab) ? rawTab : "overview";
 
   const profileQuery = usePublicProfile(validId ? userId : undefined);
 
@@ -54,7 +47,7 @@ export default function UserPublicProfilePage({ params }: Props) {
         ) : (
           <>
             <ProfileHero profile={profileQuery.data} isOwner={isOwner} />
-            <ProfileTabs active={activeTab} />
+            <ProfileTabs active={activeTab} isOwner={isOwner} />
             <div className="mx-auto mt-8 w-full max-w-5xl space-y-10 px-4">
               {activeTab === "overview" && <ProfileStats profile={profileQuery.data} />}
               <ProfileTabPanels

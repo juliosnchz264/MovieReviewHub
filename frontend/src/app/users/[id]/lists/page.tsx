@@ -3,7 +3,7 @@
 import { use } from "react";
 import { Navbar } from "@/components/navbar";
 import { ListGrid } from "@/features/lists/components/ListGrid";
-import { usePublicListsByUser } from "@/features/lists/hooks/useLists";
+import { useListsByUser } from "@/features/lists/hooks/useLists";
 
 interface Props {
   params: Promise<{ id: string }>;
@@ -12,7 +12,7 @@ interface Props {
 export default function UserPublicListsPage({ params }: Props) {
   const { id } = use(params);
   const userId = Number(id);
-  const { data, isLoading } = usePublicListsByUser(userId);
+  const { data, isLoading } = useListsByUser(userId);
 
   return (
     <>

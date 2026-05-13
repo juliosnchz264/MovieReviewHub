@@ -35,7 +35,7 @@ export interface ListItem {
 }
 
 export type ListItemsPage = PagedResponse<ListItem>;
-export type PublicListsPage = PagedResponse<CustomList>;
+export type UserListsPage = PagedResponse<CustomList>;
 
 export interface ListCreateRequest {
   title: string;

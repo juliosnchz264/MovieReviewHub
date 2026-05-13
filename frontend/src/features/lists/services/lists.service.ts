@@ -8,8 +8,8 @@ import type {
   ListItemKind,
   ListItemsPage,
   ListUpdateRequest,
-  PublicListsPage,
   UpdateListItemRequest,
+  UserListsPage,
 } from "@/types/list";
 
 export const listsService = {
@@ -30,8 +30,8 @@ export const listsService = {
     return data;
   },
 
-  async publicByUser(userId: number, page = 0, size = 20): Promise<PublicListsPage> {
-    const { data } = await api.get<PublicListsPage>(`/users/${userId}/lists`, {
+  async byUser(userId: number, page = 0, size = 20): Promise<UserListsPage> {
+    const { data } = await api.get<UserListsPage>(`/users/${userId}/lists`, {
       params: { page, size },
     });
     return data;

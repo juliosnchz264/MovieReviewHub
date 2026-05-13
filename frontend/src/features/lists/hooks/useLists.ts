@@ -41,10 +41,13 @@ export function useListItems(listId: number | undefined, page = 0, size = 30) {
   });
 }
 
-export function usePublicListsByUser(userId: number | undefined, page = 0, size = 20) {
+export function useListsByUser(userId: number | undefined, page = 0, size = 20) {
+  // Viewer en queryKey: backend filtra por identidad (owner ve PRIVATE/UNLISTED).
+  // Sin esto, login/logout reusaria un cache que podria estar restringido o expandido.
+  const viewerId = useAuthStore((s) => s.user?.id ?? null);
   return useQuery({
-    queryKey: ["lists", "public", userId, page, size],
-    queryFn: () => listsService.publicByUser(userId!, page, size),
+    queryKey: ["lists", "by-user", userId, viewerId, page, size],
+    queryFn: () => listsService.byUser(userId!, page, size),
     enabled: Number.isFinite(userId),
     placeholderData: keepPreviousData,
   });
@@ -66,6 +69,7 @@ export function useCreateList() {
     mutationFn: (req: ListCreateRequest) => listsService.create(req),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
     },
   });
 }
@@ -76,6 +80,7 @@ export function useUpdateList(id: number) {
     mutationFn: (req: ListUpdateRequest) => listsService.update(id, req),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
       qc.setQueryData(["list", data.slug], data);
     },
   });
@@ -87,6 +92,7 @@ export function useDeleteList() {
     mutationFn: (id: number) => listsService.remove(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
     },
   });
 }

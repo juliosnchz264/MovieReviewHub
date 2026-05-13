@@ -61,11 +61,24 @@ public class ListService {
                 .toList();
     }
 
+    /**
+     * Listado del perfil /users/{id}/lists. Excluye listas default (Watchlist/Watched):
+     * tienen tabs propios, no se pueden borrar y no son listas "del usuario" semanticamente.
+     * Visibilidad depende del viewer:
+     *  - viewer == owner -> custom no borradas (PUBLIC + PRIVATE + UNLISTED).
+     *  - resto (incluye anon) -> solo PUBLIC custom. UNLISTED no se enumera; sigue
+     *    accesible vía slug directo (link) en {@link #findBySlug}.
+     */
     @Transactional(readOnly = true)
-    public PagedResponse<ListResponse> findPublicListsByUser(Long ownerUserId, Pageable pageable) {
+    public PagedResponse<ListResponse> findListsByUserVisibleTo(
+            Long ownerUserId, Long viewerUserId, Pageable pageable) {
         User owner = loadUser(ownerUserId);
-        Page<CustomList> page = listRepository
-                .findAllByUserIdAndVisibilityAndDeletedFalse(ownerUserId, ListVisibility.PUBLIC, pageable);
+        boolean isOwner = viewerUserId != null && viewerUserId.equals(ownerUserId);
+        Page<CustomList> page = isOwner
+                ? listRepository.findAllByUserIdAndIsDefaultFalseAndDeletedFalseOrderByUpdatedAtDesc(
+                        ownerUserId, pageable)
+                : listRepository.findAllByUserIdAndVisibilityAndIsDefaultFalseAndDeletedFalse(
+                        ownerUserId, ListVisibility.PUBLIC, pageable);
         return PagedResponse.from(page, l -> ListResponse.from(l, owner));
     }
 

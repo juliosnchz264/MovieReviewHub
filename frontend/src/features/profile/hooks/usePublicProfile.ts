@@ -22,9 +22,24 @@ export function useUpdateMyProfile() {
   return useMutation({
     mutationFn: (req: UpdateProfileRequest) => profileService.updateMyProfile(req),
     onSuccess: (data) => {
+      // Authoritative snapshot for this profile id.
       qc.setQueryData(["profile", "public", data.id], data);
-      qc.invalidateQueries({ queryKey: ["profile", "public"] });
+      // Other viewers of this profile (lists, etc) — drop and refetch on next mount.
+      qc.invalidateQueries({ queryKey: ["profile", "public"], refetchType: "none" });
+      // /auth/me drives Navbar / user-menu; trigger refetch.
       qc.invalidateQueries({ queryKey: ["currentUser"] });
+      // Mirror overlapping fields into the auth store so any component that
+      // reads `useAuthStore.user` directly (Navbar fallback, sidebars, etc.)
+      // reflects the change immediately without waiting for /auth/me.
+      const store = useAuthStore.getState();
+      if (store.user) {
+        store.setUser({
+          ...store.user,
+          handle: data.handle,
+          avatarUrl: data.avatarUrl,
+          themeColor: data.themeColor,
+        });
+      }
     },
   });
 }
@@ -70,6 +85,7 @@ export function useUploadAvatar() {
     onSuccess: (data: User) => {
       qc.setQueryData(["currentUser"], data);
       qc.invalidateQueries({ queryKey: ["profile", "public"] });
+      useAuthStore.getState().setUser(data);
     },
   });
 }
@@ -81,6 +97,7 @@ export function useRemoveAvatar() {
     onSuccess: (data: User) => {
       qc.setQueryData(["currentUser"], data);
       qc.invalidateQueries({ queryKey: ["profile", "public"] });
+      useAuthStore.getState().setUser(data);
     },
   });
 }

@@ -16,7 +16,13 @@ import {
 import type { PublicProfile, UpdateProfileRequest } from "@/types/user";
 import { THEME_COLORS, type ThemeColor } from "@/types/user";
 
-const SOCIAL_PATTERNS: Record<"facebook" | "instagram" | "twitter" | "tiktok", { rx: RegExp; key: string }> = {
+const HANDLE_RE = /^[\p{L}\p{N}_.]{3,30}$/u;
+const BIO_MAX = 500;
+
+const SOCIAL_PATTERNS: Record<
+  "facebook" | "instagram" | "twitter" | "tiktok",
+  { rx: RegExp; key: string }
+> = {
   facebook: {
     rx: /^https:\/\/(www\.)?facebook\.com\/.+/,
     key: "accountValidation.socialInvalidFacebook",
@@ -63,14 +69,8 @@ const THEME_HEX: Record<ThemeColor, string> = {
   slate: "#64748b",
 };
 
-export function EditProfileForm({ profile }: Props) {
-  const t = useTranslate();
-  const update = useUpdateMyProfile();
-  const upload = useUploadAvatar();
-  const remove = useRemoveAvatar();
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [form, setForm] = useState<FormState>(() => ({
+function profileToFormState(profile: PublicProfile): FormState {
+  return {
     bio: profile.bio ?? "",
     handle: profile.handle ?? "",
     themeColor: (profile.themeColor as ThemeColor | null) ?? "",
@@ -78,10 +78,33 @@ export function EditProfileForm({ profile }: Props) {
     instagram: profile.social.instagram ?? "",
     twitter: profile.social.twitter ?? "",
     tiktok: profile.social.tiktok ?? "",
-  }));
+  };
+}
+
+export function EditProfileForm({ profile }: Props) {
+  const t = useTranslate();
+  const update = useUpdateMyProfile();
+  const upload = useUploadAvatar();
+  const remove = useRemoveAvatar();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [form, setForm] = useState<FormState>(() => profileToFormState(profile));
   const [pendingAvatar, setPendingAvatar] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [avatarBroken, setAvatarBroken] = useState(false);
+
+  // Re-sync form when the underlying profile snapshot changes (e.g., refetch
+  // after a successful save). Compare against the last-seen profile to avoid
+  // clobbering in-progress edits when an unrelated refetch races in. We track
+  // the profile reference; usePublicProfile only returns a new reference when
+  // server data actually changes, so this is safe.
+  const profileSnapshotRef = useRef(profile);
+  useEffect(() => {
+    if (profile !== profileSnapshotRef.current) {
+      profileSnapshotRef.current = profile;
+      setForm(profileToFormState(profile));
+    }
+  }, [profile]);
 
   useEffect(() => {
     return () => {
@@ -111,24 +134,52 @@ export function EditProfileForm({ profile }: Props) {
   const dirty = otherDirty || pendingAvatar !== null;
   const saving = update.isPending || upload.isPending;
 
-  const socialErrors = useMemo(() => {
-    const check = (kind: keyof typeof SOCIAL_PATTERNS, value: string) => {
-      if (!value.trim()) return null;
-      return SOCIAL_PATTERNS[kind].rx.test(value.trim())
-        ? null
-        : t(SOCIAL_PATTERNS[kind].key);
+  // Reactive validation: recompute errors on every keystroke. Empty values are
+  // considered valid (fields are optional / clearable). Submit is gated by
+  // hasError so the user can never PATCH invalid data.
+  const errors = useMemo(() => {
+    const handleErr =
+      form.handle.trim() && !HANDLE_RE.test(form.handle.trim())
+        ? t("accountValidation.handleInvalid")
+        : null;
+    const bioErr =
+      form.bio.length > BIO_MAX ? t("accountValidation.bioTooLong") : null;
+    const social = {
+      facebook: form.facebook.trim()
+        ? SOCIAL_PATTERNS.facebook.rx.test(form.facebook.trim())
+          ? null
+          : t(SOCIAL_PATTERNS.facebook.key)
+        : null,
+      instagram: form.instagram.trim()
+        ? SOCIAL_PATTERNS.instagram.rx.test(form.instagram.trim())
+          ? null
+          : t(SOCIAL_PATTERNS.instagram.key)
+        : null,
+      twitter: form.twitter.trim()
+        ? SOCIAL_PATTERNS.twitter.rx.test(form.twitter.trim())
+          ? null
+          : t(SOCIAL_PATTERNS.twitter.key)
+        : null,
+      tiktok: form.tiktok.trim()
+        ? SOCIAL_PATTERNS.tiktok.rx.test(form.tiktok.trim())
+          ? null
+          : t(SOCIAL_PATTERNS.tiktok.key)
+        : null,
     };
-    return {
-      facebook: check("facebook", form.facebook),
-      instagram: check("instagram", form.instagram),
-      twitter: check("twitter", form.twitter),
-      tiktok: check("tiktok", form.tiktok),
-    };
-  }, [form.facebook, form.instagram, form.twitter, form.tiktok, t]);
-  const hasSocialError = Object.values(socialErrors).some(Boolean);
+    return { handle: handleErr, bio: bioErr, ...social };
+  }, [form, t]);
+
+  const hasError =
+    errors.handle !== null ||
+    errors.bio !== null ||
+    errors.facebook !== null ||
+    errors.instagram !== null ||
+    errors.twitter !== null ||
+    errors.tiktok !== null;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (hasError) return;
     try {
       if (pendingAvatar) {
         await upload.mutateAsync(pendingAvatar);
@@ -146,7 +197,11 @@ export function EditProfileForm({ profile }: Props) {
           socialTwitter: form.twitter,
           socialTiktok: form.tiktok,
         };
-        await update.mutateAsync(payload);
+        const saved = await update.mutateAsync(payload);
+        // Mirror backend canonical values immediately so the form clears its
+        // dirty state without waiting for the parent's query refetch.
+        setForm(profileToFormState(saved));
+        profileSnapshotRef.current = saved;
       }
       toast.success(t("editProfile.saved"));
     } catch (err) {
@@ -259,26 +314,33 @@ export function EditProfileForm({ profile }: Props) {
       <FieldBlock
         label={t("editProfile.handle")}
         hint={t("editProfile.handleHint")}
+        error={errors.handle}
       >
         <Input
           value={form.handle}
           onChange={(e) => setForm((s) => ({ ...s, handle: e.target.value }))}
           placeholder={t("editProfile.handlePlaceholder")}
           maxLength={30}
+          aria-invalid={Boolean(errors.handle)}
         />
       </FieldBlock>
 
-      <FieldBlock label={t("editProfile.bio")} hint={t("editProfile.bioHint")}>
+      <FieldBlock
+        label={t("editProfile.bio")}
+        hint={t("editProfile.bioHint")}
+        error={errors.bio}
+      >
         <textarea
           value={form.bio}
           onChange={(e) => setForm((s) => ({ ...s, bio: e.target.value }))}
           placeholder={t("editProfile.bioPlaceholder")}
-          maxLength={500}
+          maxLength={BIO_MAX}
           rows={5}
+          aria-invalid={Boolean(errors.bio)}
           className="w-full resize-y rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
         <p className="mt-1 text-right text-xs text-muted-foreground">
-          {form.bio.length} / 500
+          {form.bio.length} / {BIO_MAX}
         </p>
       </FieldBlock>
 
@@ -315,34 +377,32 @@ export function EditProfileForm({ profile }: Props) {
         <SocialInput
           label={t("editProfile.facebook")}
           value={form.facebook}
-          error={socialErrors.facebook}
+          error={errors.facebook}
           onChange={(v) => setForm((s) => ({ ...s, facebook: v }))}
         />
         <SocialInput
           label={t("editProfile.instagram")}
           value={form.instagram}
-          error={socialErrors.instagram}
+          error={errors.instagram}
           onChange={(v) => setForm((s) => ({ ...s, instagram: v }))}
         />
         <SocialInput
           label={t("editProfile.twitter")}
           value={form.twitter}
-          error={socialErrors.twitter}
+          error={errors.twitter}
           onChange={(v) => setForm((s) => ({ ...s, twitter: v }))}
         />
         <SocialInput
           label={t("editProfile.tiktok")}
           value={form.tiktok}
-          error={socialErrors.tiktok}
+          error={errors.tiktok}
           onChange={(v) => setForm((s) => ({ ...s, tiktok: v }))}
         />
       </section>
 
       <div className="flex items-center justify-end gap-2 border-t border-border pt-4">
-        <Button type="submit" disabled={!dirty || saving || hasSocialError}>
-          {saving ? (
-            <Loader2 className="mr-2 size-4 animate-spin" />
-          ) : null}
+        <Button type="submit" disabled={!dirty || saving || hasError}>
+          {saving ? <Loader2 className="mr-2 size-4 animate-spin" /> : null}
           {saving ? t("editProfile.saving") : t("editProfile.save")}
         </Button>
       </div>
@@ -353,17 +413,25 @@ export function EditProfileForm({ profile }: Props) {
 function FieldBlock({
   label,
   hint,
+  error,
   children,
 }: {
   label: string;
   hint?: string;
+  error?: string | null;
   children: React.ReactNode;
 }) {
   return (
     <section className="space-y-2">
       <label className="text-sm font-medium">{label}</label>
       {children}
-      {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
+      {error ? (
+        <p className="text-xs text-destructive" aria-live="polite">
+          {error}
+        </p>
+      ) : hint ? (
+        <p className="text-xs text-muted-foreground">{hint}</p>
+      ) : null}
     </section>
   );
 }
@@ -392,7 +460,11 @@ function SocialInput({
           inputMode="url"
           aria-invalid={Boolean(error)}
         />
-        {error && <p className="text-xs text-destructive">{error}</p>}
+        {error && (
+          <p className="text-xs text-destructive" aria-live="polite">
+            {error}
+          </p>
+        )}
       </div>
     </div>
   );

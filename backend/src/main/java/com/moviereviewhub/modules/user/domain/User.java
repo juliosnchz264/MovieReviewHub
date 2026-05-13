@@ -59,4 +59,38 @@ public class User extends BaseEntity {
     @lombok.Builder.Default
     @Column(name = "profile_completed", nullable = false)
     private boolean profileCompleted = true;
+
+    @Column(length = 50)
+    private String handle;
+
+    @Column(name = "theme_color", length = 20)
+    private String themeColor;
+
+    @Column(name = "social_facebook", length = 255)
+    private String socialFacebook;
+
+    @Column(name = "social_instagram", length = 255)
+    private String socialInstagram;
+
+    @Column(name = "social_twitter", length = 255)
+    private String socialTwitter;
+
+    @Column(name = "social_tiktok", length = 255)
+    private String socialTiktok;
+
+    @Column(name = "default_language", length = 10)
+    private String defaultLanguage;
+
+    @Column(name = "fallback_language", length = 10)
+    private String fallbackLanguage;
+
+    @Column(length = 2)
+    private String country;
+
+    @Column(length = 64)
+    private String timezone;
+
+    @lombok.Builder.Default
+    @Column(name = "autodetect_timezone", nullable = false)
+    private boolean autodetectTimezone = true;
 }

@@ -22,6 +22,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     boolean existsByUsernameAndDeletedFalse(String username);
 
+    boolean existsByHandleIgnoreCaseAndDeletedFalse(String handle);
+
     @Query("""
             SELECT u FROM User u
             WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :search, '%'))

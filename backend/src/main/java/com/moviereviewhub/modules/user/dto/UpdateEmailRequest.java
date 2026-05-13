@@ -11,7 +11,11 @@ public record UpdateEmailRequest(
         @Size(max = 255)
         String newEmail,
 
-        @NotBlank
+        /**
+         * Required for local accounts. Ignored for OAuth-only accounts (no local
+         * password): the JWT session authenticates the change. Note: provider
+         * may re-verify the address on next sign-in.
+         */
         String currentPassword
 ) {
 }

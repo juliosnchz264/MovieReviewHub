@@ -1,10 +1,12 @@
 package com.moviereviewhub.modules.user.dto;
 
-import jakarta.validation.constraints.NotBlank;
-
 public record DeleteAccountRequest(
 
-        @NotBlank
+        /**
+         * Required for local accounts. Ignored for OAuth-only accounts (no local
+         * password): the JWT session authenticates the deletion alongside the
+         * confirmation token typed in the UI.
+         */
         String currentPassword
 ) {
 }

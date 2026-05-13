@@ -8,7 +8,12 @@ public record UserResponse(
         String username,
         String email,
         UserRole role,
-        boolean profileCompleted
+        boolean profileCompleted,
+        String handle,
+        String avatarUrl,
+        String themeColor,
+        String provider,
+        boolean hasPassword
 ) {
     public static UserResponse from(User user) {
         return new UserResponse(
@@ -16,7 +21,12 @@ public record UserResponse(
                 user.getUsername(),
                 user.getEmail(),
                 user.getRole(),
-                user.isProfileCompleted()
+                user.isProfileCompleted(),
+                user.getHandle(),
+                user.getAvatarUrl(),
+                user.getThemeColor(),
+                user.getProvider(),
+                user.getPassword() != null && !user.getPassword().isBlank()
         );
     }
 }

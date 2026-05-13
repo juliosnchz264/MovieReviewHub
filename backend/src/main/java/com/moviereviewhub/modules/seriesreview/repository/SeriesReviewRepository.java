@@ -24,6 +24,7 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
             SELECT r FROM SeriesReview r
             JOIN FETCH r.user
             WHERE r.series.id = :seriesId AND r.deleted = false
+            ORDER BY r.createdAt DESC, r.id DESC
             """)
     Page<SeriesReview> findBySeriesId(@Param("seriesId") Long seriesId, Pageable pageable);
 
@@ -31,6 +32,7 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
             SELECT r FROM SeriesReview r
             JOIN FETCH r.series
             WHERE r.user.id = :userId AND r.deleted = false
+            ORDER BY r.createdAt DESC, r.id DESC
             """)
     Page<SeriesReview> findByUserId(@Param("userId") Long userId, Pageable pageable);
 

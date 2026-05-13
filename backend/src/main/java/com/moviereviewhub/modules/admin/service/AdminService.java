@@ -54,6 +54,29 @@ public class AdminService {
     public AdminUserResponse unbanUser(Long targetUserId) {
         User user = userRepository.findById(targetUserId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Cuenta auto-eliminada (no baneada): el email y username están anonimizados
+        // y normalmente otro registro activo ocupa el provider/email original.
+        if (user.getEmail() != null && user.getEmail().endsWith("@deleted.local")) {
+            throw new ConflictException(
+                    "This account was deleted by the user and cannot be restored"
+            );
+        }
+
+        // Si el usuario tenía OAuth vinculado, otra cuenta activa puede haberse
+        // creado con el mismo (provider, provider_id) tras el ban -> colisión de índice.
+        if (user.getProvider() != null && user.getProviderId() != null) {
+            userRepository.findByProviderAndProviderIdAndDeletedFalse(
+                    user.getProvider(), user.getProviderId()
+            ).ifPresent(other -> {
+                if (!other.getId().equals(user.getId())) {
+                    throw new ConflictException(
+                            "Another active account is linked to this user's OAuth provider"
+                    );
+                }
+            });
+        }
+
         user.setDeleted(false);
         return AdminUserResponse.from(userRepository.save(user));
     }

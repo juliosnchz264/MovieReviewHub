@@ -5,12 +5,15 @@ import com.moviereviewhub.config.properties.JwtProperties;
 import com.moviereviewhub.exception.UnauthorizedException;
 import com.moviereviewhub.modules.auth.dto.AuthResponse;
 import com.moviereviewhub.modules.auth.service.TokenIssuer.AuthResult;
+import com.moviereviewhub.modules.user.dto.AccountSettingsResponse;
 import com.moviereviewhub.modules.user.dto.AccountStatsResponse;
 import com.moviereviewhub.modules.user.dto.AvailabilityResponse;
 import com.moviereviewhub.modules.user.dto.ChangePasswordRequest;
 import com.moviereviewhub.modules.user.dto.CompleteProfileRequest;
 import com.moviereviewhub.modules.user.dto.DeleteAccountRequest;
 import com.moviereviewhub.modules.user.dto.PublicProfileResponse;
+import com.moviereviewhub.modules.user.dto.SetPasswordRequest;
+import com.moviereviewhub.modules.user.dto.UpdateAccountSettingsRequest;
 import com.moviereviewhub.modules.user.dto.UpdateEmailRequest;
 import com.moviereviewhub.modules.user.dto.UpdateProfileRequest;
 import com.moviereviewhub.modules.user.dto.UpdateUsernameRequest;
@@ -35,7 +38,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.concurrent.TimeUnit;
 
@@ -70,6 +75,36 @@ public class UserController {
             @Valid @RequestBody UpdateProfileRequest req
     ) {
         return ResponseEntity.ok(userService.updateProfile(requireAuth(principal).getUser(), req));
+    }
+
+    @GetMapping("/me/settings")
+    public ResponseEntity<AccountSettingsResponse> mySettings(
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(userService.getSettings(requireAuth(principal).getUser()));
+    }
+
+    @PatchMapping("/me/settings")
+    public ResponseEntity<AccountSettingsResponse> updateSettings(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @Valid @RequestBody UpdateAccountSettingsRequest req
+    ) {
+        return ResponseEntity.ok(userService.updateSettings(requireAuth(principal).getUser(), req));
+    }
+
+    @PostMapping(value = "/me/avatar", consumes = "multipart/form-data")
+    public ResponseEntity<UserResponse> uploadAvatar(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @RequestPart("file") MultipartFile file
+    ) {
+        return ResponseEntity.ok(userService.uploadAvatar(requireAuth(principal).getUser(), file));
+    }
+
+    @DeleteMapping("/me/avatar")
+    public ResponseEntity<UserResponse> removeAvatar(
+            @AuthenticationPrincipal CustomUserDetails principal
+    ) {
+        return ResponseEntity.ok(userService.removeAvatar(requireAuth(principal).getUser()));
     }
 
     @GetMapping("/me/stats")
@@ -133,6 +168,23 @@ public class UserController {
             @Valid @RequestBody ChangePasswordRequest req
     ) {
         userService.changePassword(requireAuth(principal).getUser(), req);
+        ResponseCookie clear = buildClearCookie();
+        return ResponseEntity.noContent()
+                .header(HttpHeaders.SET_COOKIE, clear.toString())
+                .build();
+    }
+
+    /**
+     * Enable local email/password sign-in for an OAuth-only account.
+     * Refuses (409) if the account already has a local password.
+     * Revokes refresh tokens so the user signs in again with the new method.
+     */
+    @PostMapping("/me/password/set")
+    public ResponseEntity<Void> setLocalPassword(
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @Valid @RequestBody SetPasswordRequest req
+    ) {
+        userService.setLocalPassword(requireAuth(principal).getUser(), req);
         ResponseCookie clear = buildClearCookie();
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, clear.toString())

@@ -4,6 +4,7 @@ import com.moviereviewhub.config.properties.CookieProperties;
 import com.moviereviewhub.config.properties.CorsProperties;
 import com.moviereviewhub.config.properties.JwtProperties;
 import com.moviereviewhub.config.properties.OAuth2Properties;
+import com.moviereviewhub.config.properties.SupabaseProperties;
 import com.moviereviewhub.config.properties.TmdbProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -16,7 +17,8 @@ import org.springframework.web.client.RestClient;
         CorsProperties.class,
         CookieProperties.class,
         TmdbProperties.class,
-        OAuth2Properties.class
+        OAuth2Properties.class,
+        SupabaseProperties.class
 })
 public class AppConfig {
 

@@ -14,7 +14,10 @@ public record UpdateUsernameRequest(
         )
         String newUsername,
 
-        @NotBlank
+        /**
+         * Required for local accounts. Ignored for OAuth-only accounts (no local
+         * password): the JWT session authenticates the change.
+         */
         String currentPassword
 ) {
 }

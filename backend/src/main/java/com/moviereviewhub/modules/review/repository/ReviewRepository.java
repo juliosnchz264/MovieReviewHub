@@ -34,6 +34,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT r FROM Review r
             JOIN FETCH r.user
             WHERE r.movie.id = :movieId AND r.deleted = false
+            ORDER BY r.createdAt DESC, r.id DESC
             """)
     Page<Review> findByMovieId(@Param("movieId") Long movieId, Pageable pageable);
 
@@ -41,6 +42,7 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             SELECT r FROM Review r
             JOIN FETCH r.movie
             WHERE r.user.id = :userId AND r.deleted = false
+            ORDER BY r.createdAt DESC, r.id DESC
             """)
     Page<Review> findByUserId(@Param("userId") Long userId, Pageable pageable);
 

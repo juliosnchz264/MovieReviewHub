@@ -41,6 +41,10 @@ spring:
             scope: openid,profile,email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
             authorization-grant-type: authorization_code
+  servlet:
+    multipart:
+      max-file-size: 4MB
+      max-request-size: 4MB
 
 server:
   port: ${SERVER_PORT:8080}
@@ -92,5 +96,14 @@ app:
     enabled: ${KEEP_ALIVE_ENABLED:false}
     url: ${KEEP_ALIVE_URL:${RENDER_EXTERNAL_URL:}/actuator/health}
     interval-ms: ${KEEP_ALIVE_INTERVAL_MS:600000}
+
+# Supabase Storage para avatar uploads. Si url/service-role-key/avatar-bucket
+# estan vacios, el endpoint POST /users/me/avatar devuelve 503 y el frontend
+# cae al flujo "URL externa".
+supabase:
+  url: ${SUPABASE_URL:}
+  service-role-key: ${SUPABASE_SERVICE_ROLE_KEY:}
+  avatar-bucket: ${SUPABASE_AVATAR_BUCKET:}
+  public-base-url: ${SUPABASE_PUBLIC_BASE_URL:}
 
 # Logging configurado en logback-spring.xml (perfil-aware: JSON en prod, pretty en dev)

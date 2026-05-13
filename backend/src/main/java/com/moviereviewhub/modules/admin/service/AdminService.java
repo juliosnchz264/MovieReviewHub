@@ -5,6 +5,9 @@ import com.moviereviewhub.exception.ConflictException;
 import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.modules.admin.dto.AdminStats;
 import com.moviereviewhub.modules.admin.dto.AdminUserResponse;
+import com.moviereviewhub.modules.auth.dto.AuthResponse;
+import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
+import com.moviereviewhub.modules.auth.service.TokenIssuer;
 import com.moviereviewhub.modules.favorite.repository.FavoriteRepository;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
@@ -17,6 +20,7 @@ import com.moviereviewhub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +35,9 @@ public class AdminService {
     private final SeriesRepository seriesRepository;
     private final SeriesReviewRepository seriesReviewRepository;
     private final SeriesFavoriteRepository seriesFavoriteRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenRepository refreshTokenRepository;
+    private final TokenIssuer tokenIssuer;
 
     @Transactional(readOnly = true)
     public PagedResponse<AdminUserResponse> listUsers(String search, Pageable pageable) {
@@ -79,6 +86,45 @@ public class AdminService {
 
         user.setDeleted(false);
         return AdminUserResponse.from(userRepository.save(user));
+    }
+
+    /**
+     * Admin-driven password reset. Encodes a new password for the target user
+     * and revokes all outstanding refresh tokens so any existing session is
+     * invalidated. Refuses self-targeting and banned accounts.
+     */
+    @Transactional
+    public void resetPassword(Long currentAdminId, Long targetUserId, String newPassword) {
+        if (currentAdminId.equals(targetUserId)) {
+            throw new ConflictException("Use change-password endpoint for your own account");
+        }
+        User user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (user.isDeleted()) {
+            throw new ConflictException("User is banned or deleted");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+        refreshTokenRepository.revokeAllByUser(user);
+    }
+
+    /**
+     * Mints access + refresh tokens for the target user without going through
+     * /auth/login. Bypasses the auth rate limiter (filter only watches
+     * /auth/* paths) and the user's own password — admin-only operation
+     * intended for seed/enrichment scripts.
+     */
+    @Transactional
+    public AuthResponse impersonate(Long currentAdminId, Long targetUserId) {
+        if (currentAdminId.equals(targetUserId)) {
+            throw new ConflictException("Cannot impersonate yourself");
+        }
+        User user = userRepository.findById(targetUserId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        if (user.isDeleted()) {
+            throw new ConflictException("User is banned or deleted");
+        }
+        return tokenIssuer.issueTokens(user).body();
     }
 
     @Transactional(readOnly = true)

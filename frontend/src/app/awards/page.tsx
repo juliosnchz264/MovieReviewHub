@@ -42,15 +42,17 @@ export default function AwardsPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-4 py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-7xl space-y-8">
+      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-12">
+        <div className="mx-auto w-full max-w-7xl space-y-6 sm:space-y-8">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="grid size-12 place-items-center rounded-full bg-secondary text-secondary-foreground">
-                <Trophy className="size-6" />
+              <div className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-secondary-foreground sm:size-12">
+                <Trophy className="size-5 sm:size-6" />
               </div>
-              <div>
-                <h1 className="text-3xl font-semibold tracking-tight">{t("nav.awards")}</h1>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                  {t("nav.awards")}
+                </h1>
                 <p className="text-sm text-muted-foreground">{t("awards.subtitle")}</p>
               </div>
             </div>
@@ -88,7 +90,7 @@ export default function AwardsPage() {
             {years.map((year) => (
               <section key={year} className="space-y-4">
                 <h2 className="text-xl font-medium">{year}</h2>
-                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
                   {byYear[year].map((entry) => {
                     const isMovie = entry.winner.mediaType === "movie";
                     const tmdbKey = String(entry.winner.tmdbId);

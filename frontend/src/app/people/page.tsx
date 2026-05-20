@@ -34,10 +34,12 @@ export default function PeoplePage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-4 py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-7xl space-y-6">
+      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-12">
+        <div className="mx-auto w-full max-w-7xl space-y-5 sm:space-y-6">
           <div className="space-y-1">
-            <h1 className="text-3xl font-semibold tracking-tight">{t("nav.people")}</h1>
+            <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+              {t("nav.people")}
+            </h1>
             <p className="text-sm text-muted-foreground">{t("people.subtitle")}</p>
           </div>
 
@@ -57,7 +59,7 @@ export default function PeoplePage() {
           )}
 
           {people.length > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {people.map((person) => (
                 <PersonCard key={person.tmdbId} person={person} />
               ))}
@@ -81,7 +83,7 @@ export default function PeoplePage() {
 
 function PeopleGridSkeleton({ count }: { count: number }) {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {Array.from({ length: count }).map((_, i) => (
         <div
           key={i}

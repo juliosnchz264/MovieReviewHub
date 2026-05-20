@@ -40,7 +40,7 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-4 py-10">
+      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-10">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <Link href="/movies">
             <Button variant="outline" size="sm">
@@ -49,8 +49,8 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
           </Link>
 
         {isLoading && (
-          <div className="grid gap-6 md:grid-cols-[300px_1fr]">
-            <Skeleton className="aspect-2/3 rounded-xl" />
+          <div className="grid gap-5 sm:gap-6 md:grid-cols-[240px_1fr] lg:grid-cols-[300px_1fr]">
+            <Skeleton className="mx-auto aspect-2/3 w-40 rounded-xl sm:w-52 md:mx-0 md:w-full" />
             <div className="space-y-3">
               <Skeleton className="h-9 w-2/3" />
               <Skeleton className="h-4 w-1/3" />
@@ -62,14 +62,14 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
         {isError && <p className="text-destructive">{t("movieDetail.notFound")}</p>}
 
         {movie && (
-          <article className="grid gap-6 md:grid-cols-[300px_1fr]">
-            <div className="relative aspect-2/3 overflow-hidden rounded-xl border border-border bg-muted">
+          <article className="grid gap-5 sm:gap-6 md:grid-cols-[240px_1fr] lg:grid-cols-[300px_1fr]">
+            <div className="relative mx-auto aspect-2/3 w-40 overflow-hidden rounded-xl border border-border bg-muted sm:w-52 md:mx-0 md:w-full">
               {movie.imageUrl ? (
                 <Image
                   src={movie.imageUrl}
                   alt={movie.title}
                   fill
-                  sizes="(max-width: 768px) 100vw, 300px"
+                  sizes="(max-width: 768px) 50vw, 300px"
                   className="object-cover"
                 />
               ) : (
@@ -81,7 +81,9 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
 
             <div className="space-y-4">
               <div>
-                <h1 className="text-3xl font-semibold tracking-tight">{movie.title}</h1>
+                <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                  {movie.title}
+                </h1>
                 <p className="text-sm text-muted-foreground">
                   {movie.genres && movie.genres.length > 0
                     ? movie.genres.map((g) => t(`genres.${g}`)).join(", ")

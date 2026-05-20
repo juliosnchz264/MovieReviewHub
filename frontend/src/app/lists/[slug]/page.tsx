@@ -48,7 +48,7 @@ export default function ListDetailPage({ params }: Props) {
     return (
       <>
         <Navbar />
-        <main className="px-4 py-10">
+        <main className="px-3 py-8 sm:px-4 sm:py-10">
           <p className="mx-auto max-w-5xl text-muted-foreground">Loading...</p>
         </main>
       </>
@@ -59,7 +59,7 @@ export default function ListDetailPage({ params }: Props) {
     return (
       <>
         <Navbar />
-        <main className="px-4 py-16">
+        <main className="px-3 py-10 sm:px-4 sm:py-16">
           <div className="mx-auto max-w-md text-center">
             <h1 className="text-xl font-semibold">List not found</h1>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -109,13 +109,15 @@ export default function ListDetailPage({ params }: Props) {
   return (
     <>
       <Navbar />
-      <main className="px-4 py-10">
+      <main className="px-3 py-6 sm:px-4 sm:py-10">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <header className="space-y-2">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-3xl font-semibold tracking-tight">{data.title}</h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    {data.title}
+                  </h1>
                   <VisibilityBadge visibility={data.visibility} />
                 </div>
                 <p className="text-sm text-muted-foreground">

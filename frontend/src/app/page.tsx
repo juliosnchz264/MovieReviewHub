@@ -53,7 +53,7 @@ export default function Home() {
         ]}
       />
 
-      <div className="mx-auto w-full max-w-7xl space-y-10 px-4 py-10">
+      <div className="mx-auto w-full max-w-7xl space-y-8 px-3 py-6 sm:space-y-10 sm:px-4 sm:py-10 lg:py-14">
         <MovieRow
           title={t("home.trendingTitle")}
           subtitle={t("home.trendingSubtitle")}

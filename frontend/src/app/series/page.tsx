@@ -65,22 +65,24 @@ export default function SeriesPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-4 py-8 sm:py-12">
-        <div className="mx-auto w-full max-w-7xl space-y-6">
-          <h1 className="text-3xl font-semibold tracking-tight">{t("nav.series")}</h1>
+      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-12">
+        <div className="mx-auto w-full max-w-7xl space-y-5 sm:space-y-6">
+          <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            {t("nav.series")}
+          </h1>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
             <input
               type="search"
               placeholder={t("movies.searchPlaceholder")}
               value={titleInput}
               onChange={(e) => setTitleInput(e.target.value)}
-              className="min-w-[200px] flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+              className="w-full flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 sm:min-w-[200px]"
             />
             <select
               value={genre}
               onChange={(e) => setGenre(e.target.value)}
-              className="rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+              className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30 sm:w-auto"
             >
               {GENRES.map((g) => (
                 <option key={g} value={g}>
@@ -99,7 +101,7 @@ export default function SeriesPage() {
           )}
 
           {isLoading && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
                   <Skeleton className="aspect-2/3 w-full rounded-none" />
@@ -119,7 +121,7 @@ export default function SeriesPage() {
           )}
 
           {items.length > 0 && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {items.map((s) => (
                 <div
                   key={s.id}
@@ -168,7 +170,7 @@ export default function SeriesPage() {
           <div ref={sentinelRef} className="h-10" />
 
           {isFetchingNextPage && (
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
               {Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="aspect-2/3 rounded-xl" />
               ))}

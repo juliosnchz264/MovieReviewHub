@@ -38,7 +38,7 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-4 py-10">
+      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-10">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <Link href="/series">
             <Button variant="outline" size="sm">
@@ -47,8 +47,8 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
           </Link>
 
           {isLoading && (
-            <div className="grid gap-6 md:grid-cols-[300px_1fr]">
-              <Skeleton className="aspect-2/3 rounded-xl" />
+            <div className="grid gap-5 sm:gap-6 md:grid-cols-[240px_1fr] lg:grid-cols-[300px_1fr]">
+              <Skeleton className="mx-auto aspect-2/3 w-40 rounded-xl sm:w-52 md:mx-0 md:w-full" />
               <div className="space-y-3">
                 <Skeleton className="h-9 w-2/3" />
                 <Skeleton className="h-4 w-1/3" />
@@ -59,14 +59,14 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
           {isError && <p className="text-destructive">{t("series.notFound")}</p>}
 
           {series && (
-            <article className="grid gap-6 md:grid-cols-[300px_1fr]">
-              <div className="relative aspect-2/3 overflow-hidden rounded-xl border border-border bg-muted">
+            <article className="grid gap-5 sm:gap-6 md:grid-cols-[240px_1fr] lg:grid-cols-[300px_1fr]">
+              <div className="relative mx-auto aspect-2/3 w-40 overflow-hidden rounded-xl border border-border bg-muted sm:w-52 md:mx-0 md:w-full">
                 {series.imageUrl ? (
                   <Image
                     src={series.imageUrl}
                     alt={series.title}
                     fill
-                    sizes="(max-width: 768px) 100vw, 300px"
+                    sizes="(max-width: 768px) 50vw, 300px"
                     className="object-cover"
                   />
                 ) : (
@@ -78,7 +78,9 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
 
               <div className="space-y-4">
                 <div>
-                  <h1 className="text-3xl font-semibold tracking-tight">{series.title}</h1>
+                  <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                    {series.title}
+                  </h1>
                   <p className="text-sm text-muted-foreground">
                     {series.genres && series.genres.length > 0
                       ? series.genres.map((g) => t(`genres.${g}`)).join(", ")
@@ -159,7 +161,7 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
           {validId && series?.genres && series.genres.length > 0 && similar.data && similar.data.length > 0 && (
             <section className="space-y-3 pt-6">
               <h2 className="text-xl font-semibold">{t("series.similarTitle")}</h2>
-              <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
                 {similar.data.map((s) => (
                   <Link
                     key={s.id}

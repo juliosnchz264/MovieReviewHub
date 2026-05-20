@@ -25,10 +25,16 @@ export function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/85 backdrop-blur supports-[backdrop-filter]:bg-background/70">
-      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3">
-        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight">
-          <Clapperboard className="size-5 text-primary" />
-          <span className="text-base sm:text-lg">MovieReviewHub</span>
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-2 px-3 py-2.5 sm:gap-4 sm:px-4 sm:py-3">
+        <Link
+          href="/"
+          className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
+        >
+          <Clapperboard className="size-5 text-primary" aria-hidden />
+          <span className="hidden text-base sm:inline sm:text-lg">
+            MovieReviewHub
+          </span>
+          <span className="text-base sm:hidden">MRH</span>
         </Link>
 
         <nav className="ml-2 hidden items-center gap-0.5 md:flex">
@@ -52,15 +58,18 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="ml-auto flex items-center gap-1">
-          <LanguageToggle />
-          <ThemeToggle />
+        <div className="ml-auto flex min-w-0 items-center gap-0.5 sm:gap-1">
+          <div className="hidden sm:flex sm:items-center sm:gap-0.5">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
           <UserMenu />
           <Button
             variant="ghost"
             size="icon"
             className="md:hidden"
-            aria-label="Open menu"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
             onClick={() => setMobileOpen((v) => !v)}
           >
             {mobileOpen ? <X className="size-5" /> : <Menu className="size-5" />}
@@ -70,7 +79,7 @@ export function Navbar() {
 
       {mobileOpen && (
         <nav className="border-t border-border md:hidden">
-          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-4 py-3">
+          <div className="mx-auto flex w-full max-w-7xl flex-col gap-1 px-3 py-3 sm:px-4">
             {links.map((link) => {
               const active =
                 pathname === link.href || pathname.startsWith(link.href + "/");
@@ -80,7 +89,7 @@ export function Navbar() {
                   href={link.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "rounded-md px-3 py-2 text-sm transition",
+                    "rounded-md px-3 py-3 text-base transition",
                     active
                       ? "bg-secondary text-foreground"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -90,6 +99,10 @@ export function Navbar() {
                 </Link>
               );
             })}
+            <div className="mt-2 flex items-center gap-2 border-t border-border pt-3 sm:hidden">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
           </div>
         </nav>
       )}

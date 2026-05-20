@@ -95,7 +95,7 @@ export function UserMenu() {
           role="menu"
           aria-label={t("nav.profile")}
           className={cn(
-            "absolute right-0 top-full z-50 mt-2 w-72 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl",
+            "absolute right-0 top-full z-50 mt-2 w-[min(18rem,calc(100vw-1.5rem))] overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-xl",
             "animate-in fade-in-0 zoom-in-95"
           )}
         >

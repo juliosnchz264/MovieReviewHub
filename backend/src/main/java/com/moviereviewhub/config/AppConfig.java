@@ -9,6 +9,7 @@ import com.moviereviewhub.config.properties.TmdbProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
 @Configuration
@@ -25,6 +26,7 @@ public class AppConfig {
     @Bean
     public RestClient tmdbRestClient(TmdbProperties props) {
         return RestClient.builder()
+                .requestFactory(new HttpComponentsClientHttpRequestFactory())
                 .baseUrl(props.baseUrl())
                 .defaultHeader("Authorization", "Bearer " + props.apiKey())
                 .defaultHeader("Accept", "application/json")

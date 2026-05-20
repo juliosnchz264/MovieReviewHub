@@ -390,7 +390,7 @@ function MovieWatchlistGrid({ items }: { items: { id: number; title: string; ima
   const t = useTranslate();
   if (items.length === 0) return <Empty message={t("profile.noWatchlistOwnerMovies")} />;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {items.map((movie) => (
         <Link
           key={movie.id}
@@ -425,7 +425,7 @@ function SeriesWatchlistGrid({ items }: { items: { id: number; title: string; im
   const t = useTranslate();
   if (items.length === 0) return <Empty message={t("profile.noWatchlistOwnerSeries")} />;
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       {items.map((series) => (
         <Link
           key={series.id}
@@ -458,7 +458,7 @@ function SeriesWatchlistGrid({ items }: { items: { id: number; title: string; im
 
 function GridSkeleton() {
   return (
-    <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
       <Skeleton className="aspect-2/3 w-full" />
       <Skeleton className="aspect-2/3 w-full" />
       <Skeleton className="aspect-2/3 w-full" />

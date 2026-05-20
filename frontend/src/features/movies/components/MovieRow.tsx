@@ -20,15 +20,17 @@ interface Props {
 export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Props) {
   return (
     <section className="space-y-3">
-      <div>
-        <h2 className="text-xl font-semibold tracking-tight">{title}</h2>
-        {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
+      <div className="px-px">
+        <h2 className="text-lg font-semibold tracking-tight sm:text-xl">{title}</h2>
+        {subtitle && (
+          <p className="text-xs text-muted-foreground sm:text-sm">{subtitle}</p>
+        )}
       </div>
 
       {isLoading && (
         <ScrollContainer>
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="w-40 shrink-0">
+            <div key={i} className="w-32 shrink-0 sm:w-36 md:w-40">
               <Skeleton className="aspect-2/3 w-full rounded-xl opacity-60" />
               <Skeleton className="mt-2 h-4 w-3/4 opacity-60" />
             </div>
@@ -47,7 +49,7 @@ export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Prop
           {movies.map((movie) => (
             <article
               key={movie.id}
-              className="group relative w-40 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 transition hover:border-border hover:bg-card hover:shadow-md"
+              className="group relative w-32 shrink-0 overflow-hidden rounded-xl border border-border/40 bg-card/40 transition hover:border-border hover:bg-card hover:shadow-md sm:w-36 md:w-40"
             >
               <div className="absolute right-1.5 top-1.5 z-10 flex items-center gap-1">
                 <CardActionsMenu kind="MOVIE" targetId={movie.id} />
@@ -126,15 +128,15 @@ function ScrollContainer({ children }: { children: ReactNode }) {
 
   const showFade = atStart && hasOverflow;
 
-  // Wrapper hereda el -mx-4 para que `right-0` del fade caiga en el borde
+  // Wrapper hereda el -mx para que `right-0` del fade caiga en el borde
   // derecho real del scroller (sin offset por el padding/margen).
   return (
-    <div className="relative -mx-4">
+    <div className="relative -mx-3 sm:-mx-4">
       <div
         ref={scrollerRef}
-        className="overflow-x-auto px-4 pb-2 [scrollbar-width:thin]"
+        className="touch-pan-x overflow-x-auto overscroll-x-contain px-3 pb-2 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch] sm:px-4"
       >
-        <div className="flex gap-3" style={{ minWidth: "max-content" }}>
+        <div className="flex gap-3 sm:gap-4" style={{ minWidth: "max-content" }}>
           {children}
         </div>
       </div>

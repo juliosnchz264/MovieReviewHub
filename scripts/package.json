@@ -1,0 +1,19 @@
+{
+  "name": "moviereviewhub-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "social": "tsx generate-social-activity.ts",
+    "social:dry": "DRY_RUN=1 tsx generate-social-activity.ts"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.16.5",
+    "@types/pg": "^8.11.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

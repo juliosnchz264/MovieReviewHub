@@ -304,6 +304,10 @@ export const dictionary = {
       heroTitle: "Descubre, valora y recuerda las películas que amas.",
       heroSubtitle:
         "Catálogo de películas con reseñas, valoraciones y favoritos, con datos de TMDB.",
+      heroVideoAlt: "Tráiler de fondo de la película Obsession",
+      heroMovieTitle: "Obsession",
+      heroMovieGenre: "Drama Psicológico",
+      heroCtaWatch: "Ver película",
       ctaBrowse: "Explorar películas",
       ctaCreate: "Crear cuenta",
       trendingTitle: "Tendencias",
@@ -747,6 +751,10 @@ export const dictionary = {
       heroTitle: "Discover, rate, and remember the movies you love.",
       heroSubtitle:
         "Movie catalog with reviews, ratings, and favorites, backed by TMDB.",
+      heroVideoAlt: "Background trailer for the movie Obsession",
+      heroMovieTitle: "Obsession",
+      heroMovieGenre: "Psychological Drama",
+      heroCtaWatch: "Watch movie",
       ctaBrowse: "Browse movies",
       ctaCreate: "Create account",
       trendingTitle: "Trending now",

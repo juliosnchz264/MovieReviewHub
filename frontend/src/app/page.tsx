@@ -23,11 +23,34 @@ export default function Home() {
       <Navbar />
 
       <HeroVideo
-        ariaLabel={t("home.heroVideoAlt")}
-        title={t("home.heroMovieTitle")}
-        genre={t("home.heroMovieGenre")}
-        ctaLabel={t("home.heroCtaWatch")}
-        ctaHref="/movies/215"
+        prevLabel={t("home.heroPrev")}
+        nextLabel={t("home.heroNext")}
+        slides={[
+          {
+            videoBase: "obsession",
+            ariaLabel: t("home.heroVideoAlt"),
+            title: t("home.heroMovieTitle"),
+            genre: t("home.heroMovieGenre"),
+            ctaLabel: t("home.heroCtaWatch"),
+            ctaHref: "/movies/215",
+          },
+          {
+            videoBase: "backrooms",
+            ariaLabel: t("home.heroVideoAltBackrooms"),
+            title: t("home.heroMovieTitleBackrooms"),
+            genre: t("home.heroMovieGenreBackrooms"),
+            ctaLabel: t("home.heroCtaWatch"),
+            ctaHref: "/movies/219",
+          },
+          {
+            videoBase: "scary-movie",
+            ariaLabel: t("home.heroVideoAltScaryMovie"),
+            title: t("home.heroMovieTitleScaryMovie"),
+            genre: t("home.heroMovieGenreScaryMovie"),
+            ctaLabel: t("home.heroCtaWatch"),
+            ctaHref: "/movies/220",
+          },
+        ]}
       />
 
       <div className="mx-auto w-full max-w-7xl space-y-10 px-4 py-10">

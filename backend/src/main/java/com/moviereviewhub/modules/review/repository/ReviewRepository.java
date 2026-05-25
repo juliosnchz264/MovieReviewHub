@@ -73,10 +73,19 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
     MovieRatingStats getUserRatingStats(@Param("userId") Long userId);
 
     /**
-     * Hot-rank review ids for a movie. Letterboxd-style: weighted likes + replies
-     * with time decay so recent quality bubbles up but old gold still ranks.
-     * Score = (likes*2 + replies) / pow(hours_since_post + 2, 1.5).
-     * Returns ids only; entities loaded separately to keep JOIN FETCH semantics.
+     * Hot-rank review ids for a movie. Reddit "hot" formula:
+     *
+     *   hot = sign(score) * log10(max(|score|, 1))
+     *       + epoch_seconds(created_at) / 45000
+     *
+     * where score = likes + replies / 2.
+     *
+     * Filters out zero-engagement reviews: a freshly-posted review with no
+     * likes and no replies has no business being labeled "popular", and the
+     * recency term would otherwise push it above older reviews with real
+     * engagement (every 10x boost in engagement only buys ~12.5 h of age).
+     * Reviews surface here only after they collect at least one like or one
+     * reply; until then they live in the "recent" section.
      */
     @Query(value = """
             SELECT r.id FROM reviews r
@@ -89,9 +98,11 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                 WHERE target_type = 'MOVIE' AND deleted = false GROUP BY target_id
             ) rp ON rp.target_id = r.id
             WHERE r.movie_id = :movieId AND r.deleted = false
+              AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
             ORDER BY (
-                (COALESCE(lk.cnt, 0) * 2 + COALESCE(rp.cnt, 0))
-                / POWER(EXTRACT(EPOCH FROM (now() - r.created_at)) / 3600 + 2, 1.5)
+                SIGN(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5)
+                * LOG(GREATEST(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5, 1))
+                + EXTRACT(EPOCH FROM r.created_at) / 45000.0
             ) DESC,
             r.created_at DESC,
             r.id DESC
@@ -111,16 +122,27 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
                         WHERE target_type = 'MOVIE' AND deleted = false GROUP BY target_id
                     ) rp ON rp.target_id = r.id
                     WHERE r.movie_id = :movieId AND r.deleted = false
+                      AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
                     ORDER BY (
-                        (COALESCE(lk.cnt, 0) * 2 + COALESCE(rp.cnt, 0))
-                        / POWER(EXTRACT(EPOCH FROM (now() - r.created_at)) / 3600 + 2, 1.5)
+                        SIGN(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5)
+                        * LOG(GREATEST(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5, 1))
+                        + EXTRACT(EPOCH FROM r.created_at) / 45000.0
                     ) DESC,
                     r.created_at DESC,
                     r.id DESC
                     """,
             countQuery = """
                     SELECT COUNT(*) FROM reviews r
+                    LEFT JOIN (
+                        SELECT target_id, COUNT(*) AS cnt FROM review_likes
+                        WHERE target_type = 'MOVIE' GROUP BY target_id
+                    ) lk ON lk.target_id = r.id
+                    LEFT JOIN (
+                        SELECT target_id, COUNT(*) AS cnt FROM review_replies
+                        WHERE target_type = 'MOVIE' AND deleted = false GROUP BY target_id
+                    ) rp ON rp.target_id = r.id
                     WHERE r.movie_id = :movieId AND r.deleted = false
+                      AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
                     """,
             nativeQuery = true
     )
@@ -132,4 +154,16 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
             WHERE r.id IN :ids AND r.deleted = false
             """)
     List<Review> findAllByIdsFetchUser(@Param("ids") Collection<Long> ids);
+
+    /**
+     * Used by notification hydration to attach movie title + poster without
+     * an N+1. Includes soft-deleted rows so we can render a tombstone when
+     * the underlying review has been removed.
+     */
+    @Query("""
+            SELECT r FROM Review r
+            JOIN FETCH r.movie
+            WHERE r.id IN :ids
+            """)
+    List<Review> findAllByIdsFetchMovieIncludingDeleted(@Param("ids") Collection<Long> ids);
 }

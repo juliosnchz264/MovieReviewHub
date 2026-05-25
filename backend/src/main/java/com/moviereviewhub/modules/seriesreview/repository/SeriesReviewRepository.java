@@ -64,6 +64,12 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
 
     long countByUser_IdAndDeletedFalse(Long userId);
 
+    /**
+     * Hot-rank ids for a series. Same Reddit "hot" formula as
+     * ReviewRepository.findPopularIds; see that method for math + rationale.
+     * Also matches the engagement filter (must have at least one like or
+     * reply) so a freshly-posted review doesn't crash the "Popular" tab.
+     */
     @Query(value = """
             SELECT r.id FROM series_reviews r
             LEFT JOIN (
@@ -75,9 +81,11 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
                 WHERE target_type = 'SERIES' AND deleted = false GROUP BY target_id
             ) rp ON rp.target_id = r.id
             WHERE r.series_id = :seriesId AND r.deleted = false
+              AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
             ORDER BY (
-                (COALESCE(lk.cnt, 0) * 2 + COALESCE(rp.cnt, 0))
-                / POWER(EXTRACT(EPOCH FROM (now() - r.created_at)) / 3600 + 2, 1.5)
+                SIGN(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5)
+                * LOG(GREATEST(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5, 1))
+                + EXTRACT(EPOCH FROM r.created_at) / 45000.0
             ) DESC,
             r.created_at DESC,
             r.id DESC
@@ -97,16 +105,27 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
                         WHERE target_type = 'SERIES' AND deleted = false GROUP BY target_id
                     ) rp ON rp.target_id = r.id
                     WHERE r.series_id = :seriesId AND r.deleted = false
+                      AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
                     ORDER BY (
-                        (COALESCE(lk.cnt, 0) * 2 + COALESCE(rp.cnt, 0))
-                        / POWER(EXTRACT(EPOCH FROM (now() - r.created_at)) / 3600 + 2, 1.5)
+                        SIGN(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5)
+                        * LOG(GREATEST(COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0) * 0.5, 1))
+                        + EXTRACT(EPOCH FROM r.created_at) / 45000.0
                     ) DESC,
                     r.created_at DESC,
                     r.id DESC
                     """,
             countQuery = """
                     SELECT COUNT(*) FROM series_reviews r
+                    LEFT JOIN (
+                        SELECT target_id, COUNT(*) AS cnt FROM review_likes
+                        WHERE target_type = 'SERIES' GROUP BY target_id
+                    ) lk ON lk.target_id = r.id
+                    LEFT JOIN (
+                        SELECT target_id, COUNT(*) AS cnt FROM review_replies
+                        WHERE target_type = 'SERIES' AND deleted = false GROUP BY target_id
+                    ) rp ON rp.target_id = r.id
                     WHERE r.series_id = :seriesId AND r.deleted = false
+                      AND (COALESCE(lk.cnt, 0) + COALESCE(rp.cnt, 0)) > 0
                     """,
             nativeQuery = true
     )
@@ -118,4 +137,15 @@ public interface SeriesReviewRepository extends JpaRepository<SeriesReview, Long
             WHERE r.id IN :ids AND r.deleted = false
             """)
     List<SeriesReview> findAllByIdsFetchUser(@Param("ids") Collection<Long> ids);
+
+    /**
+     * Notification hydration: includes soft-deleted rows so we can render a
+     * tombstone when the underlying review has been removed.
+     */
+    @Query("""
+            SELECT r FROM SeriesReview r
+            JOIN FETCH r.series
+            WHERE r.id IN :ids
+            """)
+    List<SeriesReview> findAllByIdsFetchSeriesIncludingDeleted(@Param("ids") Collection<Long> ids);
 }

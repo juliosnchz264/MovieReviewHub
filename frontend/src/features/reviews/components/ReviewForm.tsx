@@ -4,11 +4,16 @@ import { FormEvent, useState } from "react";
 import { AxiosError } from "axios";
 import { Button } from "@/components/ui/button";
 import { RatingStars } from "./RatingStars";
-import type { Review, ReviewRequest } from "@/types/review";
+import type { ReviewRequest } from "@/types/review";
 import type { ApiError } from "@/types/auth";
 
+interface ReviewSeed {
+  rating: number;
+  comment: string | null;
+}
+
 interface Props {
-  initial?: Review;
+  initial?: ReviewSeed;
   onSubmit: (payload: ReviewRequest) => void;
   onCancel?: () => void;
   pending?: boolean;

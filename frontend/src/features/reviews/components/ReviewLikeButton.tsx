@@ -1,7 +1,6 @@
 "use client";
 
 import { Heart } from "lucide-react";
-import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useToggleReviewLike } from "@/features/reviews/hooks/useReviewSocial";
 import { useAuthStore } from "@/store/auth";
@@ -34,16 +33,32 @@ export function ReviewLikeButton({
   const iconSize = size === "sm" ? "size-4" : "size-[18px]";
   const textSize = size === "sm" ? "text-xs" : "text-sm";
 
+  // Own review → render an inert badge instead of a button. No toast, no
+  // disabled state, no click affordance: the user cannot like themselves so
+  // pretending the action exists is just bad UX.
+  if (ownReview) {
+    return (
+      <span
+        aria-label={t("reviews.likesCount", { n: likeCount })}
+        className={cn(
+          "inline-flex items-center gap-1.5 px-2 py-1 -mx-2 text-muted-foreground",
+          textSize
+        )}
+      >
+        <Heart className={iconSize} aria-hidden />
+        <span className="tabular-nums">
+          {t(likeCount === 1 ? "reviews.likesOne" : "reviews.likesMany", { n: likeCount })}
+        </span>
+      </span>
+    );
+  }
+
   const onClick = () => {
     // Gate rapid clicks — `scope.id` already queues server-side, but we don't
     // want to enqueue more than one pending toggle from a single user gesture.
     if (toggle.isPending) return;
     if (!accessToken) {
       router.push("/login");
-      return;
-    }
-    if (ownReview) {
-      toast.error(t("reviews.cannotLikeOwn"));
       return;
     }
     toggle.mutate({ wantLiked: !liked });

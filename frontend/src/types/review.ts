@@ -53,6 +53,12 @@ export interface ReviewReply {
   username: string;
   userAvatarUrl: string | null;
   body: string;
+  parentReplyId: number | null;
+  rootReplyId: number | null;
+  depth: number;
+  childCount: number;
+  likeCount: number;
+  likedByMe: boolean;
   createdAt: string;
   updatedAt: string;
   canEdit: boolean;
@@ -61,6 +67,13 @@ export interface ReviewReply {
 
 export interface ReviewReplyRequest {
   body: string;
+  parentReplyId?: number | null;
+}
+
+export interface ReplyLikeState {
+  replyId: number;
+  likedByMe: boolean;
+  likeCount: number;
 }
 
 export type ReviewSort = "popular" | "recent";

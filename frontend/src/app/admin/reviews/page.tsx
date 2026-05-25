@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAdminReviews } from "@/features/admin/hooks/useAdmin";
 import { useDeleteReview } from "@/features/reviews/hooks/useReviews";
@@ -13,14 +12,13 @@ const PAGE_SIZE = 20;
 export default function AdminReviewsPage() {
   const [page, setPage] = useState(0);
   const { data, isLoading, isError } = useAdminReviews(page, PAGE_SIZE);
+  // Admin deletes are cross-movie, so the hook gets no movieId and skips the
+  // optimistic my-review patch. Toasts come from the hook itself.
   const remove = useDeleteReview();
 
   function onDelete(id: number, username: string, movieTitle: string) {
     if (!confirm(`Delete review by ${username} on "${movieTitle}"?`)) return;
-    remove.mutate(id, {
-      onSuccess: () => toast.success("Review deleted"),
-      onError: () => toast.error("Failed to delete review"),
-    });
+    remove.mutate(id);
   }
 
   return (

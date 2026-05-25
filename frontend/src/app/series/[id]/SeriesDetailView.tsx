@@ -9,8 +9,10 @@ import { Navbar } from "@/components/navbar";
 import { useSeriesItem, useSimilarSeries } from "@/features/series/hooks/useSeries";
 import {
   useCreateSeriesReview,
+  useDeleteSeriesReview,
   useMySeriesReview,
   useSeriesRatingStats,
+  useUpdateSeriesReview,
 } from "@/features/series/hooks/useSeriesReviews";
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
@@ -18,6 +20,7 @@ import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
 import { ReviewSectionsBlock } from "@/features/reviews/components/ReviewSectionsBlock";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
+import { MyReviewPanel } from "@/features/reviews/components/MyReviewPanel";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useTranslate } from "@/hooks/useTranslate";
 import type { ApiError } from "@/types/auth";
@@ -32,6 +35,8 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
   const { data: currentUser } = useCurrentUser();
   const { data: myReview } = useMySeriesReview(seriesId);
   const createReview = useCreateSeriesReview(seriesId);
+  const updateReview = useUpdateSeriesReview(myReview?.id ?? 0, seriesId);
+  const deleteReview = useDeleteSeriesReview(seriesId);
 
   const userAlreadyReviewed = !!myReview;
 
@@ -142,6 +147,19 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                   onSubmit={(payload) => createReview.mutate(payload)}
                   pending={createReview.isPending}
                   error={createReview.error as AxiosError<ApiError> | null}
+                />
+              )}
+
+              {currentUser && myReview && (
+                <MyReviewPanel
+                  review={myReview}
+                  onUpdate={(payload) => updateReview.mutate(payload)}
+                  onDelete={async () => {
+                    await deleteReview.mutateAsync(myReview.id);
+                  }}
+                  updatePending={updateReview.isPending}
+                  deletePending={deleteReview.isPending}
+                  updateError={updateReview.error as AxiosError<ApiError> | null}
                 />
               )}
 

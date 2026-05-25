@@ -10,11 +10,14 @@ import { useSimilar } from "@/features/movies/hooks/useDiscover";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import {
   useCreateReview,
+  useDeleteReview,
   useMyMovieReview,
   useRatingStats,
+  useUpdateReview,
 } from "@/features/reviews/hooks/useReviews";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
+import { MyReviewPanel } from "@/features/reviews/components/MyReviewPanel";
 import { ReviewSectionsBlock } from "@/features/reviews/components/ReviewSectionsBlock";
 import { MovieRow } from "@/features/movies/components/MovieRow";
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
@@ -33,6 +36,8 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
   const { data: currentUser } = useCurrentUser();
   const { data: myReview } = useMyMovieReview(movieId);
   const createReview = useCreateReview(movieId);
+  const updateReview = useUpdateReview(myReview?.id ?? 0, movieId);
+  const deleteReview = useDeleteReview(movieId);
   const similar = useSimilar(validId ? movieId : null, 12);
 
   const userAlreadyReviewed = !!myReview;
@@ -125,6 +130,19 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
                 onSubmit={(payload) => createReview.mutate(payload)}
                 pending={createReview.isPending}
                 error={createReview.error as AxiosError<ApiError> | null}
+              />
+            )}
+
+            {currentUser && myReview && (
+              <MyReviewPanel
+                review={myReview}
+                onUpdate={(payload) => updateReview.mutate(payload)}
+                onDelete={async () => {
+                  await deleteReview.mutateAsync(myReview.id);
+                }}
+                updatePending={updateReview.isPending}
+                deletePending={deleteReview.isPending}
+                updateError={updateReview.error as AxiosError<ApiError> | null}
               />
             )}
 

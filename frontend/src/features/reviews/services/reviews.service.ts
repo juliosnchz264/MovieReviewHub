@@ -21,14 +21,9 @@ export const reviewsService = {
   },
 
   async myReview(movieId: number): Promise<Review | null> {
-    try {
-      const { data } = await api.get<Review>(`/movies/${movieId}/reviews/me`);
-      return data;
-    } catch (err: unknown) {
-      const status = (err as { response?: { status?: number } })?.response?.status;
-      if (status === 404) return null;
-      throw err;
-    }
+    // Backend returns 200 with a null body when the user has not reviewed.
+    const { data } = await api.get<Review | null>(`/movies/${movieId}/reviews/me`);
+    return data ?? null;
   },
 
   async create(movieId: number, payload: ReviewRequest): Promise<Review> {

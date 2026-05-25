@@ -70,6 +70,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*/replies").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*/like").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series-reviews/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/review-replies/*/thread").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/review-replies/*/children").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/review-replies/*/ancestry").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/tmdb/posters").permitAll()
                         // Lists: GET por slug + GET items + listas PUBLIC de un usuario son accesibles anon.
                         // PRIVATE manejada en service (404 si no eres owner). /users/me/lists requiere auth via anyRequest.

@@ -3,8 +3,10 @@ package com.moviereviewhub.modules.reviewsocial.controller;
 import com.moviereviewhub.common.dto.PagedResponse;
 import com.moviereviewhub.modules.reviewsocial.domain.ReviewTargetType;
 import com.moviereviewhub.modules.reviewsocial.dto.LikeStateResponse;
+import com.moviereviewhub.modules.reviewsocial.dto.ReplyLikeStateResponse;
 import com.moviereviewhub.modules.reviewsocial.dto.ReviewReplyRequest;
 import com.moviereviewhub.modules.reviewsocial.dto.ReviewReplyResponse;
+import com.moviereviewhub.modules.reviewsocial.service.ReplyLikeService;
 import com.moviereviewhub.modules.reviewsocial.service.ReviewLikeService;
 import com.moviereviewhub.modules.reviewsocial.service.ReviewReplyService;
 import com.moviereviewhub.modules.user.domain.UserRole;
@@ -29,6 +31,7 @@ public class ReviewSocialController {
 
     private final ReviewLikeService likeService;
     private final ReviewReplyService replyService;
+    private final ReplyLikeService replyLikeService;
 
     // ---------- MOVIE REVIEW LIKES ----------
 
@@ -138,5 +141,64 @@ public class ReviewSocialController {
             @AuthenticationPrincipal CustomUserDetails principal) {
         replyService.delete(id, principal.getId(), principal.getUser().getRole());
         return ResponseEntity.noContent().build();
+    }
+
+    // ---------- REPLY LIKES (shared movie + series) ----------
+
+    @PostMapping("/api/v1/review-replies/{id:\\d+}/like")
+    public ResponseEntity<ReplyLikeStateResponse> likeReply(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(replyLikeService.like(principal.getId(), id));
+    }
+
+    @DeleteMapping("/api/v1/review-replies/{id:\\d+}/like")
+    public ResponseEntity<ReplyLikeStateResponse> unlikeReply(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        return ResponseEntity.ok(replyLikeService.unlike(principal.getId(), id));
+    }
+
+    @GetMapping("/api/v1/review-replies/{id:\\d+}/like")
+    public ResponseEntity<ReplyLikeStateResponse> replyLikeState(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        Long uid = principal != null ? principal.getId() : null;
+        return ResponseEntity.ok(replyLikeService.currentState(uid, id));
+    }
+
+    // ---------- THREAD (descendants of a top-level reply) ----------
+
+    @GetMapping("/api/v1/review-replies/{id:\\d+}/thread")
+    public ResponseEntity<java.util.List<ReviewReplyResponse>> thread(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        Long uid = principal != null ? principal.getId() : null;
+        com.moviereviewhub.modules.user.domain.UserRole role =
+                principal != null ? principal.getUser().getRole() : null;
+        return ResponseEntity.ok(replyService.loadThread(id, uid, role));
+    }
+
+    // ---------- CHILDREN (direct children of a reply, paginated) ----------
+
+    @GetMapping("/api/v1/review-replies/{id:\\d+}/children")
+    public ResponseEntity<PagedResponse<ReviewReplyResponse>> children(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal,
+            @PageableDefault(size = 10) Pageable pageable) {
+        Long uid = principal != null ? principal.getId() : null;
+        UserRole role = principal != null ? principal.getUser().getRole() : null;
+        return ResponseEntity.ok(replyService.listChildren(id, uid, role, pageable));
+    }
+
+    // ---------- ANCESTRY (root → target chain for deep-link rehydration) ----------
+
+    @GetMapping("/api/v1/review-replies/{id:\\d+}/ancestry")
+    public ResponseEntity<java.util.List<ReviewReplyResponse>> ancestry(
+            @PathVariable Long id,
+            @AuthenticationPrincipal CustomUserDetails principal) {
+        Long uid = principal != null ? principal.getId() : null;
+        UserRole role = principal != null ? principal.getUser().getRole() : null;
+        return ResponseEntity.ok(replyService.loadAncestry(id, uid, role));
     }
 }

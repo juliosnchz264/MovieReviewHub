@@ -9,9 +9,29 @@ import type { ReviewKind } from "@/types/review";
 interface Props {
   kind: ReviewKind;
   reviewId: number;
+  /**
+   * Set when the form is composing a nested reply. Null/undefined creates a
+   * top-level reply on the review. Validated server-side against the parent's
+   * target + depth ceiling (MAX_DEPTH = 3).
+   */
+  parentReplyId?: number | null;
+  autoFocus?: boolean;
+  onSubmitted?: () => void;
+  onCancel?: () => void;
+  placeholder?: string;
+  submitLabel?: string;
 }
 
-export function ReviewReplyForm({ kind, reviewId }: Props) {
+export function ReviewReplyForm({
+  kind,
+  reviewId,
+  parentReplyId,
+  autoFocus,
+  onSubmitted,
+  onCancel,
+  placeholder,
+  submitLabel,
+}: Props) {
   const t = useTranslate();
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +50,12 @@ export function ReviewReplyForm({ kind, reviewId }: Props) {
     }
     setError(null);
     create.mutate(
-      { body: text },
+      { body: text, parentReplyId: parentReplyId ?? null },
       {
-        onSuccess: () => setBody(""),
+        onSuccess: () => {
+          setBody("");
+          onSubmitted?.();
+        },
       }
     );
   };
@@ -44,8 +67,9 @@ export function ReviewReplyForm({ kind, reviewId }: Props) {
         onChange={(e) => setBody(e.target.value)}
         rows={3}
         maxLength={2000}
-        placeholder={t("reviews.writeReplyPlaceholder")}
-        aria-label={t("reviews.writeReplyPlaceholder")}
+        autoFocus={autoFocus}
+        placeholder={placeholder ?? t("reviews.writeReplyPlaceholder")}
+        aria-label={placeholder ?? t("reviews.writeReplyPlaceholder")}
         className="w-full resize-y rounded-xl border border-border bg-background px-3 py-2 text-sm leading-relaxed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
       />
       <div className="flex items-center justify-between">
@@ -54,8 +78,15 @@ export function ReviewReplyForm({ kind, reviewId }: Props) {
         </span>
         <div className="flex items-center gap-2">
           {error && <span className="text-xs text-destructive">{error}</span>}
+          {onCancel && (
+            <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
+              {t("common.cancel")}
+            </Button>
+          )}
           <Button type="submit" size="sm" disabled={create.isPending}>
-            {create.isPending ? t("reviews.loadingMore") : t("reviews.sendReply")}
+            {create.isPending
+              ? t("reviews.loadingMore")
+              : submitLabel ?? t("reviews.sendReply")}
           </Button>
         </div>
       </div>

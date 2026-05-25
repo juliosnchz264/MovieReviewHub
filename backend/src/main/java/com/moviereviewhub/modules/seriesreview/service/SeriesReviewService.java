@@ -4,6 +4,7 @@ import com.moviereviewhub.common.dto.PagedResponse;
 import com.moviereviewhub.exception.ConflictException;
 import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.exception.UnauthorizedException;
+import com.moviereviewhub.modules.notification.service.event.ReviewDeletedEvent;
 import com.moviereviewhub.modules.review.dto.MovieRatingStats;
 import com.moviereviewhub.modules.review.dto.ReviewRequest;
 import com.moviereviewhub.modules.reviewsocial.domain.ReviewTargetType;
@@ -19,6 +20,7 @@ import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -39,6 +41,7 @@ public class SeriesReviewService {
     private final SeriesRepository seriesRepository;
     private final UserRepository userRepository;
     private final ReviewSocialEnrichmentService enrichmentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PagedResponse<SeriesReviewResponse> findBySeries(Long seriesId, Pageable pageable) {
@@ -203,12 +206,16 @@ public class SeriesReviewService {
         return SeriesReviewResponse.from(reviewRepository.save(review));
     }
 
+    /**
+     * Optional lookup: returns null when the user has not reviewed this series.
+     * See {@code ReviewService#findMyReview} for the rationale.
+     */
     @Transactional(readOnly = true)
     public SeriesReviewResponse findMyReview(Long userId, Long seriesId) {
-        SeriesReview review = reviewRepository
+        return reviewRepository
                 .findByUser_IdAndSeries_IdAndDeletedFalse(userId, seriesId)
-                .orElseThrow(() -> new NotFoundException("Review not found"));
-        return SeriesReviewResponse.from(review);
+                .map(SeriesReviewResponse::from)
+                .orElse(null);
     }
 
     private static int toStoredRating(Double apiRating) {
@@ -227,5 +234,6 @@ public class SeriesReviewService {
         review.setDeleted(true);
         reviewRepository.save(review);
         enrichmentService.purgeForReview(ReviewTargetType.SERIES, reviewId);
+        eventPublisher.publishEvent(new ReviewDeletedEvent(ReviewTargetType.SERIES, reviewId));
     }
 }

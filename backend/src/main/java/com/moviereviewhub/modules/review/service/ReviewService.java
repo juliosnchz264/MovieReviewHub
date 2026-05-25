@@ -6,6 +6,7 @@ import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.exception.UnauthorizedException;
 import com.moviereviewhub.modules.movie.domain.Movie;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
+import com.moviereviewhub.modules.notification.service.event.ReviewDeletedEvent;
 import com.moviereviewhub.modules.review.domain.Review;
 import com.moviereviewhub.modules.review.dto.MovieRatingStats;
 import com.moviereviewhub.modules.review.dto.ReviewRequest;
@@ -19,6 +20,7 @@ import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
@@ -38,6 +40,7 @@ public class ReviewService {
     private final MovieRepository movieRepository;
     private final UserRepository userRepository;
     private final ReviewSocialEnrichmentService enrichmentService;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public PagedResponse<ReviewResponse> findByMovie(Long movieId, Pageable pageable) {
@@ -201,12 +204,18 @@ public class ReviewService {
         return ReviewResponse.from(reviewRepository.save(review));
     }
 
+    /**
+     * Optional lookup: returns the current user's review for the given movie,
+     * or null if they have not reviewed it. Frontend uses this to know whether
+     * to render "rate" vs "edit your review", so absence is the common case —
+     * a null body keeps logs clean instead of spamming 404s.
+     */
     @Transactional(readOnly = true)
     public ReviewResponse findMyReview(Long userId, Long movieId) {
-        Review review = reviewRepository
+        return reviewRepository
                 .findByUser_IdAndMovie_IdAndDeletedFalse(userId, movieId)
-                .orElseThrow(() -> new NotFoundException("Review not found"));
-        return ReviewResponse.from(review);
+                .map(ReviewResponse::from)
+                .orElse(null);
     }
 
     private static int toStoredRating(Double apiRating) {
@@ -225,5 +234,8 @@ public class ReviewService {
         review.setDeleted(true);
         reviewRepository.save(review);
         enrichmentService.purgeForReview(ReviewTargetType.MOVIE, reviewId);
+        // Notifications pointing at this review become tombstones — clean them up
+        // AFTER_COMMIT so the soft delete is durable before we touch the bell feed.
+        eventPublisher.publishEvent(new ReviewDeletedEvent(ReviewTargetType.MOVIE, reviewId));
     }
 }

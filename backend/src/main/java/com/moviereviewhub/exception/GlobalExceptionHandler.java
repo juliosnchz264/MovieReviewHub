@@ -40,6 +40,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleApi(ApiException ex, HttpServletRequest req) {
+        // Include method + path so client-side bursts of 404/400 can be traced
+        // back to the offending endpoint without grepping access logs.
+        log.warn("ApiException {} {} {} -> {} ({})",
+                req.getMethod(), req.getRequestURI(), ex.getStatus().value(),
+                ex.getStatus().getReasonPhrase(), ex.getMessage());
         return ResponseEntity.status(ex.getStatus()).body(
                 ErrorResponse.of(ex.getStatus().value(), ex.getStatus().getReasonPhrase(),
                         ex.getMessage(), req.getRequestURI())

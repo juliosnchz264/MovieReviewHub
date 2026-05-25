@@ -2,6 +2,7 @@ package com.moviereviewhub.modules.reviewsocial.service;
 
 import com.moviereviewhub.exception.BadRequestException;
 import com.moviereviewhub.exception.NotFoundException;
+import com.moviereviewhub.modules.notification.service.event.ReviewLikedEvent;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
 import com.moviereviewhub.modules.reviewsocial.domain.ReviewLike;
 import com.moviereviewhub.modules.reviewsocial.domain.ReviewTargetType;
@@ -9,6 +10,7 @@ import com.moviereviewhub.modules.reviewsocial.dto.LikeStateResponse;
 import com.moviereviewhub.modules.reviewsocial.repository.ReviewLikeRepository;
 import com.moviereviewhub.modules.seriesreview.repository.SeriesReviewRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class ReviewLikeService {
     private final ReviewLikeRepository likeRepository;
     private final ReviewRepository reviewRepository;
     private final SeriesReviewRepository seriesReviewRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public LikeStateResponse like(Long userId, ReviewTargetType type, Long reviewId) {
@@ -27,6 +30,7 @@ public class ReviewLikeService {
         if (ownerId.equals(userId)) {
             throw new BadRequestException("You can't like your own review");
         }
+        boolean inserted = false;
         if (!likeRepository.existsByUserIdAndTargetTypeAndTargetId(userId, type, reviewId)) {
             try {
                 likeRepository.saveAndFlush(ReviewLike.builder()
@@ -34,9 +38,14 @@ public class ReviewLikeService {
                         .targetType(type)
                         .targetId(reviewId)
                         .build());
+                inserted = true;
             } catch (DataIntegrityViolationException ignored) {
                 // Concurrent insert won the race — fine, our intent is satisfied.
             }
+        }
+        if (inserted) {
+            // Fires AFTER_COMMIT so a notification failure cannot roll back the like.
+            eventPublisher.publishEvent(new ReviewLikedEvent(userId, ownerId, type, reviewId));
         }
         return new LikeStateResponse(
                 reviewId,

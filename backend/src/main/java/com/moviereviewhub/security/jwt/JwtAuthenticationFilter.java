@@ -26,6 +26,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String HEADER = "Authorization";
     private static final String PREFIX = "Bearer ";
+    private static final String STREAM_PATH = "/api/v1/notifications/stream";
+    private static final String STREAM_TOKEN_PARAM = "access_token";
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
@@ -35,13 +37,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
 
-        String header = request.getHeader(HEADER);
-        if (header == null || !header.startsWith(PREFIX)) {
+        String token = extractToken(request);
+        if (token == null) {
             chain.doFilter(request, response);
             return;
         }
-
-        String token = header.substring(PREFIX.length());
 
         try {
             Claims claims = jwtService.parse(token);
@@ -66,5 +66,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         chain.doFilter(request, response);
+    }
+
+    /**
+     * Tries the standard {@code Authorization: Bearer …} header first.
+     * As a narrow exception, the SSE stream endpoint also accepts an
+     * {@code ?access_token=…} query parameter because the browser
+     * {@code EventSource} API cannot attach custom headers. The token
+     * remains a normal short-lived JWT, so leakage via referrer/history is
+     * bounded to the access-token TTL.
+     */
+    private String extractToken(HttpServletRequest request) {
+        String header = request.getHeader(HEADER);
+        if (header != null && header.startsWith(PREFIX)) {
+            return header.substring(PREFIX.length());
+        }
+        if (STREAM_PATH.equals(request.getRequestURI())) {
+            String param = request.getParameter(STREAM_TOKEN_PARAM);
+            if (param != null && !param.isBlank()) {
+                return param;
+            }
+        }
+        return null;
     }
 }

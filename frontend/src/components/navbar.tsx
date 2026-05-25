@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageToggle } from "@/components/language-toggle";
 import { UserMenu } from "@/components/user-menu";
+import { NotificationsBell } from "@/features/notifications/components/NotificationsBell";
 import { cn } from "@/lib/utils";
 import { useTranslate } from "@/hooks/useTranslate";
 
@@ -63,6 +64,7 @@ export function Navbar() {
             <LanguageToggle />
             <ThemeToggle />
           </div>
+          <NotificationsBell />
           <UserMenu />
           <Button
             variant="ghost"

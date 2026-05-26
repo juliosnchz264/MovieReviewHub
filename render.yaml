@@ -19,6 +19,10 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
 
+      # OpenAPI/Swagger UI deshabilitado en prod (no exponer mapa de API).
+      - key: SPRINGDOC_ENABLED
+        value: "false"
+
       # DB — Supabase Session Pooler
       - key: DB_URL
         sync: false

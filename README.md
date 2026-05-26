@@ -5,8 +5,8 @@ Full-stack movie catalog with reviews, ratings, favorites, and TMDB integration.
 **Live demo**
 
 - App: <https://movie-review-hub-tau.vercel.app>
-- API docs: <https://moviereviewhub-backend.onrender.com/swagger-ui.html>
 - Health: <https://moviereviewhub-backend.onrender.com/actuator/health>
+- API docs (Swagger UI): solo en dev local en <http://localhost:8080/swagger-ui.html> (deshabilitado en prod).
 
 > Backend runs on Render free tier and sleeps after 15 min idle. First request after sleep takes ~30s while the container wakes up.
 

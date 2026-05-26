@@ -10,6 +10,7 @@ import com.moviereviewhub.security.ratelimit.RateLimitFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.env.Environment;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,7 +25,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
@@ -32,14 +35,20 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private static final String[] PUBLIC_PATHS = {
+    private static final String[] BASE_PUBLIC_PATHS = {
             "/api/v1/auth/**",
-            "/v3/api-docs/**",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
             "/actuator/**",
             "/oauth2/**",
             "/login/oauth2/**"
+    };
+
+    // Solo se concatenan en perfil no-prod. Defensa en profundidad: aunque
+    // SPRINGDOC_ENABLED se active por error en prod, los paths siguen
+    // requiriendo auth (no permitAll). Dos cerrojos independientes.
+    private static final String[] SPRINGDOC_PUBLIC_PATHS = {
+            "/v3/api-docs/**",
+            "/swagger-ui/**",
+            "/swagger-ui.html"
     };
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -50,14 +59,20 @@ public class SecurityConfig {
     private final OAuth2FailureHandler oauth2FailureHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, Environment env) throws Exception {
+        boolean isProd = Arrays.asList(env.getActiveProfiles()).contains("prod");
+        String[] publicPaths = isProd
+                ? BASE_PUBLIC_PATHS
+                : Stream.concat(Arrays.stream(BASE_PUBLIC_PATHS), Arrays.stream(SPRINGDOC_PUBLIC_PATHS))
+                        .toArray(String[]::new);
+
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(PUBLIC_PATHS).permitAll()
+                        .requestMatchers(publicPaths).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/people/**").permitAll()

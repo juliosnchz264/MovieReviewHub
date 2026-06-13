@@ -122,7 +122,7 @@ export default function SeriesPage() {
 
           {items.length > 0 && (
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-              {items.map((s) => (
+              {items.map((s, index) => (
                 <div
                   key={s.id}
                   className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
@@ -144,6 +144,7 @@ export default function SeriesPage() {
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                           className="object-cover transition group-hover:scale-105"
+                          priority={index < 6}
                         />
                       ) : (
                         <div className="flex h-full items-center justify-center text-muted-foreground">

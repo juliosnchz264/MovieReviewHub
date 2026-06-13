@@ -39,41 +39,42 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
                         @Param("genre") String genre,
                         Pageable pageable);
 
+    /**
+     * Similar: comparte al menos un genero, excluye actual.
+     * Ordena por rating_avg denormalizado y first_air_date.
+     */
     @Query(value = """
             SELECT s.* FROM series s
             WHERE s.deleted = false
               AND s.id <> :seriesId
               AND s.genres && CAST(:genres AS text[])
-            ORDER BY s.first_air_date DESC NULLS LAST, s.created_at DESC
+            ORDER BY COALESCE(s.rating_avg, 0) DESC, s.first_air_date DESC NULLS LAST, s.created_at DESC
             """, nativeQuery = true)
     List<Series> findSimilar(@Param("seriesId") Long seriesId,
                              @Param("genres") String[] genres,
                              Pageable pageable);
 
+    /**
+     * Trending: lee del materialized view series_trending_stats (V20).
+     * Ver MovieRepository.findTrending para detalles del flujo de refresco.
+     */
     @Query(value = """
             SELECT s.* FROM series s
+            JOIN series_trending_stats t ON t.series_id = s.id
             WHERE s.deleted = false
-            ORDER BY (
-                (SELECT COUNT(*) FROM series_reviews r
-                 WHERE r.series_id = s.id AND r.deleted = false AND r.created_at > :since)
-                +
-                (SELECT COUNT(*) FROM series_favorites f
-                 WHERE f.series_id = s.id AND f.created_at > :since) * 2
-            ) DESC, s.created_at DESC
+              AND t.score > 0
+            ORDER BY t.score DESC, s.id DESC
             """, nativeQuery = true)
     List<Series> findTrending(@Param("since") Instant since, Pageable pageable);
 
+    /**
+     * Top rated: usa columna denormalizada series.rating_avg (V20).
+     */
     @Query(value = """
             SELECT s.* FROM series s
             WHERE s.deleted = false
-              AND (
-                SELECT COUNT(*) FROM series_reviews r
-                WHERE r.series_id = s.id AND r.deleted = false
-              ) >= :minReviews
-            ORDER BY (
-                SELECT AVG(r.rating) FROM series_reviews r
-                WHERE r.series_id = s.id AND r.deleted = false
-            ) DESC NULLS LAST
+              AND s.review_count >= :minReviews
+            ORDER BY s.rating_avg DESC NULLS LAST, s.review_count DESC
             """, nativeQuery = true)
     List<Series> findTopRated(@Param("minReviews") int minReviews, Pageable pageable);
 }

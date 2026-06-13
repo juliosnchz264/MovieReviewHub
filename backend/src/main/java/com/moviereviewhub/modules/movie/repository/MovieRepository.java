@@ -44,52 +44,46 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
                        Pageable pageable);
 
     /**
-     * Trending: score = reviews_recientes + favoritos_recientes * 2 (favs pesan mas).
-     * Limita via Pageable (Spring traduce a LIMIT/OFFSET).
+     * Trending: score = reviews_recientes + favoritos_recientes * 2.
+     * Lee del materialized view movie_trending_stats (V20), refrescado
+     * cada N min por CatalogTrendingRefreshJob. Sustituye al patron previo
+     * con subqueries correlacionadas por fila.
+     *
+     * Nota: el parametro :since se ignora hoy porque el window de la mat
+     * view esta fijado a 7 dias en V20. Se conserva la firma para no
+     * romper a callers; pasar al refresh job si se requiere variabilidad.
      */
     @Query(value = """
             SELECT m.* FROM movies m
+            JOIN movie_trending_stats t ON t.movie_id = m.id
             WHERE m.deleted = false
-            ORDER BY (
-                (SELECT COUNT(*) FROM reviews r
-                 WHERE r.movie_id = m.id AND r.deleted = false AND r.created_at > :since)
-                +
-                (SELECT COUNT(*) FROM favorites f
-                 WHERE f.movie_id = m.id AND f.created_at > :since) * 2
-            ) DESC, m.created_at DESC
+              AND t.score > 0
+            ORDER BY t.score DESC, m.id DESC
             """, nativeQuery = true)
     List<Movie> findTrending(@Param("since") Instant since, Pageable pageable);
 
     /**
-     * Top rated: avg rating DESC, requiere minimo :minReviews.
+     * Top rated: avg rating DESC sobre la columna denormalizada
+     * movies.rating_avg (V20). Indexed: idx_movies_rating_avg.
      */
     @Query(value = """
             SELECT m.* FROM movies m
             WHERE m.deleted = false
-              AND (
-                SELECT COUNT(*) FROM reviews r
-                WHERE r.movie_id = m.id AND r.deleted = false
-              ) >= :minReviews
-            ORDER BY (
-                SELECT AVG(r.rating) FROM reviews r
-                WHERE r.movie_id = m.id AND r.deleted = false
-            ) DESC NULLS LAST
+              AND m.review_count >= :minReviews
+            ORDER BY m.rating_avg DESC NULLS LAST, m.review_count DESC
             """, nativeQuery = true)
     List<Movie> findTopRated(@Param("minReviews") int minReviews, Pageable pageable);
 
     /**
-     * Similar: comparte al menos un genero (overlap &&), excluye actual.
-     * Ordena por avg rating, luego created_at.
+     * Similar: comparte al menos un genero, excluye actual.
+     * Ordena por avg rating denormalizado y luego created_at.
      */
     @Query(value = """
             SELECT m.* FROM movies m
             WHERE m.deleted = false
               AND m.id <> :movieId
               AND m.genres && CAST(:genres AS text[])
-            ORDER BY COALESCE((
-                SELECT AVG(r.rating) FROM reviews r
-                WHERE r.movie_id = m.id AND r.deleted = false
-            ), 0) DESC, m.created_at DESC
+            ORDER BY COALESCE(m.rating_avg, 0) DESC, m.created_at DESC
             """, nativeQuery = true)
     List<Movie> findSimilar(@Param("movieId") Long movieId,
                             @Param("genres") String[] genres,

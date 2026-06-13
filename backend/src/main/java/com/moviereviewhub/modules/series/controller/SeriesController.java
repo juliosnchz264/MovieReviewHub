@@ -1,9 +1,13 @@
 package com.moviereviewhub.modules.series.controller;
 
 import com.moviereviewhub.common.dto.PagedResponse;
+import com.moviereviewhub.modules.people.dto.CastMemberResponse;
 import com.moviereviewhub.modules.series.dto.SeriesRequest;
 import com.moviereviewhub.modules.series.dto.SeriesResponse;
 import com.moviereviewhub.modules.series.service.SeriesService;
+import com.moviereviewhub.modules.tmdb.dto.TmdbVideoEntry;
+import com.moviereviewhub.modules.tmdb.dto.TrailerResponse;
+import com.moviereviewhub.modules.tmdb.service.TmdbService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/series")
@@ -30,6 +35,7 @@ import java.util.Map;
 public class SeriesController {
 
     private final SeriesService seriesService;
+    private final TmdbService tmdbService;
 
     @GetMapping
     public ResponseEntity<PagedResponse<SeriesResponse>> search(
@@ -92,5 +98,26 @@ public class SeriesController {
             @RequestParam(defaultValue = "1") int minReviews
     ) {
         return ResponseEntity.ok(seriesService.topRated(Math.min(limit, 50), minReviews));
+    }
+
+    @GetMapping("/{id:\\d+}/cast")
+    public ResponseEntity<List<CastMemberResponse>> cast(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(tmdbService.fetchSeriesCast(id, limit));
+    }
+
+    @GetMapping("/{id:\\d+}/trailer")
+    public ResponseEntity<TrailerResponse> trailer(@PathVariable Long id) {
+        Optional<TrailerResponse> trailer = tmdbService.fetchSeriesTrailer(id);
+        return trailer
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{id:\\d+}/videos")
+    public ResponseEntity<List<TmdbVideoEntry>> videos(@PathVariable Long id) {
+        return ResponseEntity.ok(tmdbService.fetchSeriesVideos(id));
     }
 }

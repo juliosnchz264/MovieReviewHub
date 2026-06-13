@@ -12,6 +12,7 @@ public record MovieResponse(
         String description,
         List<String> genres,
         String imageUrl,
+        String backdropUrl,
         LocalDate releaseDate,
         Instant createdAt,
         Instant updatedAt
@@ -23,6 +24,7 @@ public record MovieResponse(
                 m.getDescription(),
                 m.getGenres(),
                 m.getImageUrl(),
+                m.getBackdropUrl(),
                 m.getReleaseDate(),
                 m.getCreatedAt(),
                 m.getUpdatedAt()

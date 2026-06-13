@@ -15,6 +15,7 @@ import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,6 +47,9 @@ public class Series extends BaseEntity {
     @Column(name = "image_url", columnDefinition = "TEXT")
     private String imageUrl;
 
+    @Column(name = "backdrop_url", columnDefinition = "TEXT")
+    private String backdropUrl;
+
     @Column(name = "first_air_date")
     private LocalDate firstAirDate;
 
@@ -60,4 +64,12 @@ public class Series extends BaseEntity {
 
     @Column(name = "tmdb_id", unique = true)
     private Long tmdbId;
+
+    // Denormalized rating stats maintained by DB triggers (V20). Read-only.
+    @Column(name = "rating_avg", precision = 4, scale = 2, insertable = false, updatable = false)
+    private BigDecimal ratingAvg;
+
+    @Builder.Default
+    @Column(name = "review_count", nullable = false, insertable = false, updatable = false)
+    private Integer reviewCount = 0;
 }

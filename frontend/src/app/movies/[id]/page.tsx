@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { MovieDetailView } from "./MovieDetailView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, movieJsonLd } from "@/lib/seo/jsonld";
-import { backendApiBase, fetchWithTimeout } from "@/lib/server-api";
+import { backendApiBase, fetchWithTimeout, safeJson } from "@/lib/server-api";
+import { makeServerQueryClient } from "@/lib/query/server-client";
+import { reviewKeys } from "@/features/reviews/hooks/queryKeys";
 import type { Movie } from "@/types/movie";
 import type { MovieRatingStats } from "@/types/review";
 
@@ -19,8 +22,7 @@ async function fetchMovie(id: string): Promise<Movie | null> {
   const res = await fetchWithTimeout(`${apiBase}/movies/${id}`, {
     next: { revalidate: 300 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as Movie;
+  return safeJson<Movie>(res);
 }
 
 async function fetchStats(id: string): Promise<MovieRatingStats | null> {
@@ -30,8 +32,7 @@ async function fetchStats(id: string): Promise<MovieRatingStats | null> {
   const res = await fetchWithTimeout(`${apiBase}/movies/${id}/reviews/stats`, {
     next: { revalidate: 300 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as MovieRatingStats;
+  return safeJson<MovieRatingStats>(res);
 }
 
 export async function generateMetadata({
@@ -85,6 +86,12 @@ export default async function MovieDetailPage({
   const movieId = Number(id);
   const [movie, stats] = await Promise.all([fetchMovie(id), fetchStats(id)]);
 
+  // Seed the client QueryClient with the SSR payload so the hooks in
+  // MovieDetailView hit cache instead of re-fetching on hydrate.
+  const qc = makeServerQueryClient();
+  if (movie) qc.setQueryData(["movie", movieId], movie);
+  if (stats) qc.setQueryData(reviewKeys.stats("movie", movieId), stats);
+
   return (
     <>
       {movie && (
@@ -99,7 +106,9 @@ export default async function MovieDetailPage({
           ]}
         />
       )}
-      <MovieDetailView movieId={movieId} />
+      <HydrationBoundary state={dehydrate(qc)}>
+        <MovieDetailView movieId={movieId} />
+      </HydrationBoundary>
     </>
   );
 }

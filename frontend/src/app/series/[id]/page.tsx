@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { HydrationBoundary, dehydrate } from "@tanstack/react-query";
 import { SeriesDetailView } from "./SeriesDetailView";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbJsonLd, seriesJsonLd } from "@/lib/seo/jsonld";
-import { backendApiBase, fetchWithTimeout } from "@/lib/server-api";
+import { backendApiBase, fetchWithTimeout, safeJson } from "@/lib/server-api";
+import { makeServerQueryClient } from "@/lib/query/server-client";
+import { reviewKeys } from "@/features/reviews/hooks/queryKeys";
 import type { Series } from "@/types/series";
 import type { MovieRatingStats } from "@/types/review";
 
@@ -19,8 +22,7 @@ async function fetchSeries(id: string): Promise<Series | null> {
   const res = await fetchWithTimeout(`${apiBase}/series/${id}`, {
     next: { revalidate: 300 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as Series;
+  return safeJson<Series>(res);
 }
 
 async function fetchStats(id: string): Promise<MovieRatingStats | null> {
@@ -30,8 +32,7 @@ async function fetchStats(id: string): Promise<MovieRatingStats | null> {
   const res = await fetchWithTimeout(`${apiBase}/series/${id}/reviews/stats`, {
     next: { revalidate: 300 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as MovieRatingStats;
+  return safeJson<MovieRatingStats>(res);
 }
 
 export async function generateMetadata({
@@ -86,6 +87,10 @@ export default async function SeriesDetailPage({
   const seriesId = Number(id);
   const [series, stats] = await Promise.all([fetchSeries(id), fetchStats(id)]);
 
+  const qc = makeServerQueryClient();
+  if (series) qc.setQueryData(["series", "item", seriesId], series);
+  if (stats) qc.setQueryData(reviewKeys.stats("series", seriesId), stats);
+
   return (
     <>
       {series && (
@@ -100,7 +105,9 @@ export default async function SeriesDetailPage({
           ]}
         />
       )}
-      <SeriesDetailView seriesId={seriesId} />
+      <HydrationBoundary state={dehydrate(qc)}>
+        <SeriesDetailView seriesId={seriesId} />
+      </HydrationBoundary>
     </>
   );
 }

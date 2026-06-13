@@ -4,14 +4,17 @@ import {
   useQuery,
   useQueryClient,
   keepPreviousData,
+  type QueryClient,
 } from "@tanstack/react-query";
 import { seriesService } from "@/features/series/services/series.service";
 import type { SeriesRequest, SeriesSearchParams } from "@/types/series";
 
 const PAGE_SIZE = 12;
 
-function invalidate(qc: ReturnType<typeof useQueryClient>) {
-  qc.invalidateQueries({ queryKey: ["series"] });
+/** See useMovieMutations.invalidateMovieLists for rationale. */
+function invalidateSeriesLists(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: ["series", "infinite"] });
+  qc.invalidateQueries({ queryKey: ["series", "similar"] });
   qc.invalidateQueries({ queryKey: ["admin", "stats"] });
 }
 
@@ -59,7 +62,7 @@ export function useCreateSeries() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: SeriesRequest) => seriesService.create(payload),
-    onSuccess: () => invalidate(qc),
+    onSuccess: () => invalidateSeriesLists(qc),
   });
 }
 
@@ -67,7 +70,10 @@ export function useUpdateSeries(id: number) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (payload: SeriesRequest) => seriesService.update(id, payload),
-    onSuccess: () => invalidate(qc),
+    onSuccess: (data) => {
+      qc.setQueryData(["series", "item", id], data);
+      invalidateSeriesLists(qc);
+    },
   });
 }
 
@@ -75,7 +81,10 @@ export function useDeleteSeries() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => seriesService.remove(id),
-    onSuccess: () => invalidate(qc),
+    onSuccess: (_d, id) => {
+      qc.removeQueries({ queryKey: ["series", "item", id] });
+      invalidateSeriesLists(qc);
+    },
   });
 }
 
@@ -104,7 +113,7 @@ export function useImportTmdbSeries() {
     mutationFn: (tmdbId: number) => seriesService.tmdbImport(tmdbId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tmdb", "tv"] });
-      invalidate(qc);
+      invalidateSeriesLists(qc);
     },
   });
 }

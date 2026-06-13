@@ -4,6 +4,10 @@ import com.moviereviewhub.common.dto.PagedResponse;
 import com.moviereviewhub.modules.movie.dto.MovieRequest;
 import com.moviereviewhub.modules.movie.dto.MovieResponse;
 import com.moviereviewhub.modules.movie.service.MovieService;
+import com.moviereviewhub.modules.people.dto.CastMemberResponse;
+import com.moviereviewhub.modules.tmdb.dto.TmdbVideoEntry;
+import com.moviereviewhub.modules.tmdb.dto.TrailerResponse;
+import com.moviereviewhub.modules.tmdb.service.TmdbService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/v1/movies")
@@ -30,6 +35,7 @@ import java.util.Map;
 public class MovieController {
 
     private final MovieService movieService;
+    private final TmdbService tmdbService;
 
     @GetMapping
     public ResponseEntity<PagedResponse<MovieResponse>> search(
@@ -92,5 +98,26 @@ public class MovieController {
             @RequestParam(defaultValue = "8") int limit
     ) {
         return ResponseEntity.ok(movieService.similar(id, Math.min(limit, 20)));
+    }
+
+    @GetMapping("/{id:\\d+}/cast")
+    public ResponseEntity<List<CastMemberResponse>> cast(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        return ResponseEntity.ok(tmdbService.fetchMovieCast(id, limit));
+    }
+
+    @GetMapping("/{id:\\d+}/trailer")
+    public ResponseEntity<TrailerResponse> trailer(@PathVariable Long id) {
+        Optional<TrailerResponse> trailer = tmdbService.fetchMovieTrailer(id);
+        return trailer
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.noContent().build());
+    }
+
+    @GetMapping("/{id:\\d+}/videos")
+    public ResponseEntity<List<TmdbVideoEntry>> videos(@PathVariable Long id) {
+        return ResponseEntity.ok(tmdbService.fetchMovieVideos(id));
     }
 }

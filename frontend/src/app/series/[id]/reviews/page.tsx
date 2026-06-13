@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ReviewsFeedView } from "@/features/reviews/components/ReviewsFeedView";
-import { backendApiBase, fetchWithTimeout } from "@/lib/server-api";
+import { backendApiBase, fetchWithTimeout, safeJson } from "@/lib/server-api";
 import type { Series } from "@/types/series";
 import type { ReviewSort } from "@/types/review";
 
@@ -13,8 +13,7 @@ async function fetchSeries(id: string): Promise<Series | null> {
   const res = await fetchWithTimeout(`${apiBase}/series/${id}`, {
     next: { revalidate: 300 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as Series;
+  return safeJson<Series>(res);
 }
 
 function normalizeSort(input: string | string[] | undefined): ReviewSort {

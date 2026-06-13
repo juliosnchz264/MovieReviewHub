@@ -4,6 +4,7 @@ export interface Movie {
   description: string | null;
   genres: string[];
   imageUrl: string | null;
+  backdropUrl: string | null;
   releaseDate: string | null;
   createdAt: string;
   updatedAt: string;

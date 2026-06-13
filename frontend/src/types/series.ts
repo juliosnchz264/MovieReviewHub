@@ -6,6 +6,7 @@ export interface Series {
   description: string | null;
   genres: string[];
   imageUrl: string | null;
+  backdropUrl: string | null;
   firstAirDate: string | null;
   lastAirDate: string | null;
   numberOfSeasons: number | null;
@@ -40,6 +41,7 @@ export interface TmdbTvView {
   title: string;
   overview: string | null;
   posterUrl: string | null;
+  backdropUrl: string | null;
   firstAirDate: string | null;
   lastAirDate: string | null;
   numberOfSeasons: number | null;

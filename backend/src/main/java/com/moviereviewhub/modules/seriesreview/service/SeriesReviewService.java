@@ -169,7 +169,9 @@ public class SeriesReviewService {
                 r.getUpdatedAt(),
                 u.getId(),
                 u.getUsername(),
-                u.getAvatarUrl()
+                u.getAvatarUrl(),
+                r.getLikeCount() != null ? r.getLikeCount() : 0L,
+                r.getReplyCount() != null ? r.getReplyCount() : 0L
         );
     }
 

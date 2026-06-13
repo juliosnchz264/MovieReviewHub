@@ -16,7 +16,6 @@
 
 	<properties>
 		<java.version>21</java.version>
-		<mapstruct.version>1.6.3</mapstruct.version>
 		<jjwt.version>0.12.6</jjwt.version>
 		<springdoc.version>2.7.0</springdoc.version>
 		<bucket4j.version>8.10.1</bucket4j.version>
@@ -70,6 +69,16 @@
 			<artifactId>spring-boot-starter-actuator</artifactId>
 		</dependency>
 
+		<!-- CACHE (Caffeine for TMDB lookups: cast, trailer) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+		</dependency>
+
 		<!-- BUCKET4J (rate limiting) -->
 		<dependency>
 			<groupId>com.bucket4j</groupId>
@@ -106,13 +115,6 @@
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
 			<optional>true</optional>
-		</dependency>
-
-		<!-- MAPSTRUCT -->
-		<dependency>
-			<groupId>org.mapstruct</groupId>
-			<artifactId>mapstruct</artifactId>
-			<version>${mapstruct.version}</version>
 		</dependency>
 
 		<!-- JWT -->
@@ -202,15 +204,7 @@
 							<groupId>org.projectlombok</groupId>
 							<artifactId>lombok</artifactId>
 						</path>
-						<path>
-							<groupId>org.mapstruct</groupId>
-							<artifactId>mapstruct-processor</artifactId>
-							<version>${mapstruct.version}</version>
-						</path>
 					</annotationProcessorPaths>
-					<compilerArgs>
-						<arg>-Amapstruct.defaultComponentModel=spring</arg>
-					</compilerArgs>
 				</configuration>
 			</plugin>
 

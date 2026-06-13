@@ -12,3 +12,12 @@ spring:
         # Evita scan de schema en startup mas alla de validate (ya esta en validate).
         boot:
           allow_jdbc_metadata_access: true
+
+# Cookie defaults para prod: Secure + SameSite=None (cross-site para frontend
+# en Vercel + backend en Render). Pueden seguir siendo sobreescritos por env
+# vars en render.yaml; este bloque cierra el agujero de un deployment que
+# olvide poner COOKIE_SECURE/COOKIE_SAME_SITE y herede los defaults de dev.
+app:
+  cookie:
+    secure: ${COOKIE_SECURE:true}
+    same-site: ${COOKIE_SAME_SITE:None}

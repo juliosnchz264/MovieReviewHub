@@ -39,7 +39,73 @@ jobs:
       - name: Lint
         run: pnpm lint
 
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Unit tests
+        run: pnpm test
+
       - name: Build
         env:
           NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
         run: pnpm build
+
+  # Playwright smoke runs against a built Next.js server. Backend is mocked
+  # implicitly — the smoke specs do not exercise authenticated flows that
+  # would require a running Spring instance.
+  e2e:
+    runs-on: ubuntu-latest
+    needs: build
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm e2e:install
+
+      - name: Build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+        run: pnpm build
+
+      - name: Run Next start + Playwright
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8080/api/v1
+          PLAYWRIGHT_BASE_URL: http://localhost:3000
+        run: |
+          pnpm start &
+          SERVER_PID=$!
+          # Wait up to 30s for the server to bind.
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000 > /dev/null 2>&1; then break; fi
+            sleep 1
+          done
+          pnpm e2e
+          STATUS=$?
+          kill $SERVER_PID || true
+          exit $STATUS
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: frontend/playwright-report
+          retention-days: 7

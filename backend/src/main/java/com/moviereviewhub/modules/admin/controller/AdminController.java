@@ -42,7 +42,7 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<PagedResponse<AdminUserResponse>> listUsers(
             @RequestParam(required = false) String search,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable
+            @PageableDefault(size = 20, sort = "created_at", direction = Sort.Direction.DESC) Pageable pageable
     ) {
         return ResponseEntity.ok(adminService.listUsers(search, pageable));
     }

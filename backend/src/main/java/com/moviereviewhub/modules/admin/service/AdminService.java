@@ -5,9 +5,12 @@ import com.moviereviewhub.exception.ConflictException;
 import com.moviereviewhub.exception.NotFoundException;
 import com.moviereviewhub.modules.admin.dto.AdminStats;
 import com.moviereviewhub.modules.admin.dto.AdminUserResponse;
+import com.moviereviewhub.config.properties.JwtProperties;
 import com.moviereviewhub.modules.auth.dto.AuthResponse;
 import com.moviereviewhub.modules.auth.repository.RefreshTokenRepository;
 import com.moviereviewhub.modules.auth.service.TokenIssuer;
+import com.moviereviewhub.modules.user.dto.UserResponse;
+import com.moviereviewhub.security.jwt.JwtService;
 import com.moviereviewhub.modules.favorite.repository.FavoriteRepository;
 import com.moviereviewhub.modules.movie.repository.MovieRepository;
 import com.moviereviewhub.modules.review.repository.ReviewRepository;
@@ -18,6 +21,7 @@ import com.moviereviewhub.modules.user.domain.User;
 import com.moviereviewhub.modules.user.domain.UserRole;
 import com.moviereviewhub.modules.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -26,7 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AdminService {
+
+    /** Impersonation tokens live 5 minutes. Admin must re-impersonate after. */
+    private static final long IMPERSONATION_TTL_MS = 5 * 60 * 1000L;
 
     private final UserRepository userRepository;
     private final MovieRepository movieRepository;
@@ -38,6 +46,8 @@ public class AdminService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
     private final TokenIssuer tokenIssuer;
+    private final JwtService jwtService;
+    private final JwtProperties jwtProperties;
 
     @Transactional(readOnly = true)
     public PagedResponse<AdminUserResponse> listUsers(String search, Pageable pageable) {
@@ -109,10 +119,13 @@ public class AdminService {
     }
 
     /**
-     * Mints access + refresh tokens for the target user without going through
-     * /auth/login. Bypasses the auth rate limiter (filter only watches
-     * /auth/* paths) and the user's own password — admin-only operation
-     * intended for seed/enrichment scripts.
+     * Mints a short-lived (5 min) access token for the target user without
+     * going through /auth/login. NO refresh token is issued: the impersonation
+     * window is bounded and cannot be silently extended, and the legitimate
+     * user's own refresh family stays untouched.
+     *
+     * Every call is audited (admin id, target id, structured log event) so the
+     * action can be reconstructed from logs in case of dispute.
      */
     @Transactional
     public AuthResponse impersonate(Long currentAdminId, Long targetUserId) {
@@ -124,7 +137,10 @@ public class AdminService {
         if (user.isDeleted()) {
             throw new ConflictException("User is banned or deleted");
         }
-        return tokenIssuer.issueTokens(user).body();
+        log.warn("AUDIT event=admin_impersonate admin_id={} target_id={} ttl_ms={}",
+                currentAdminId, targetUserId, IMPERSONATION_TTL_MS);
+        String access = jwtService.generateAccessToken(user, IMPERSONATION_TTL_MS);
+        return AuthResponse.of(access, IMPERSONATION_TTL_MS, UserResponse.from(user));
     }
 
     @Transactional(readOnly = true)

@@ -170,7 +170,9 @@ export function useDeleteNotification() {
   return useMutation({
     mutationFn: (id: number) => notificationService.remove(id),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["notifications"] });
+      // Refetch only the list + unread count. The SSE stream stays open.
+      qc.invalidateQueries({ queryKey: ["notifications", "list"] });
+      qc.invalidateQueries({ queryKey: UNREAD_COUNT_KEY });
     },
   });
 }

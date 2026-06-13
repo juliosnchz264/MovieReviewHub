@@ -2,6 +2,7 @@ package com.moviereviewhub.modules.notification.controller;
 
 import com.moviereviewhub.modules.notification.service.SseNotificationBroker;
 import com.moviereviewhub.security.userdetails.CustomUserDetails;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -21,7 +22,12 @@ public class NotificationStreamController {
      * {@code ?access_token=…} query parameter accepted only on this path.
      */
     @GetMapping(path = "/api/v1/notifications/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter stream(@AuthenticationPrincipal CustomUserDetails principal) {
+    public SseEmitter stream(@AuthenticationPrincipal CustomUserDetails principal,
+                             HttpServletResponse response) {
+        // Disable proxy buffering so events flush in real time.
+        response.setHeader("Cache-Control", "no-cache, no-transform");
+        response.setHeader("X-Accel-Buffering", "no");
+        response.setHeader("Connection", "keep-alive");
         return broker.register(principal.getId());
     }
 }

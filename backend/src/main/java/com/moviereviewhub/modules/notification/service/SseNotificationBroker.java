@@ -2,6 +2,7 @@ package com.moviereviewhub.modules.notification.service;
 
 import com.moviereviewhub.modules.notification.dto.NotificationResponse;
 import com.moviereviewhub.modules.notification.dto.UnreadCountResponse;
+import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -26,7 +27,9 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Slf4j
 public class SseNotificationBroker {
 
-    private static final long EMITTER_TIMEOUT_MS = 0L; // never time out from server side
+    // Finite timeout so dead/half-open sockets get reaped instead of leaking
+    // forever. Client EventSource reconnects automatically on the next ping.
+    private static final long EMITTER_TIMEOUT_MS = 60L * 60L * 1000L; // 1 hour
     private static final String EVENT_NOTIFICATION = "notification";
     private static final String EVENT_UNREAD_COUNT = "unread-count";
     private static final String EVENT_HEARTBEAT = "heartbeat";
@@ -113,5 +116,27 @@ public class SseNotificationBroker {
         if (emitters.isEmpty()) {
             connections.remove(userId, emitters);
         }
+    }
+
+    /**
+     * On JVM shutdown / redeploy, complete every emitter cleanly so the
+     * client receives an orderly end-of-stream instead of a TCP RST and
+     * can reconnect once the new instance is up.
+     */
+    @PreDestroy
+    public void shutdown() {
+        int total = 0;
+        for (var entry : connections.entrySet()) {
+            for (SseEmitter emitter : entry.getValue()) {
+                try {
+                    emitter.complete();
+                    total++;
+                } catch (Exception ignored) {
+                    // already completed
+                }
+            }
+        }
+        connections.clear();
+        log.info("SSE broker shutdown: closed {} emitters", total);
     }
 }

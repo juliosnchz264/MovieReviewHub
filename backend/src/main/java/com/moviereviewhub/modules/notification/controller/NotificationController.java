@@ -5,6 +5,7 @@ import com.moviereviewhub.modules.notification.dto.MarkReadRequest;
 import com.moviereviewhub.modules.notification.dto.NotificationResponse;
 import com.moviereviewhub.modules.notification.dto.UnreadCountResponse;
 import com.moviereviewhub.modules.notification.service.NotificationQueryService;
+import com.moviereviewhub.modules.notification.service.SseNotificationBroker;
 import com.moviereviewhub.security.userdetails.CustomUserDetails;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +28,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class NotificationController {
 
     private final NotificationQueryService queryService;
+    private final SseNotificationBroker broker;
+
+    private void pushUnreadCount(Long userId) {
+        broker.publishUnreadCount(userId, queryService.unreadCount(userId));
+    }
 
     @GetMapping
     public ResponseEntity<PagedResponse<NotificationResponse>> list(
@@ -48,6 +54,7 @@ public class NotificationController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @Valid @RequestBody MarkReadRequest req) {
         queryService.markRead(principal.getId(), req.ids());
+        pushUnreadCount(principal.getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -55,6 +62,7 @@ public class NotificationController {
     public ResponseEntity<Void> markAllRead(
             @AuthenticationPrincipal CustomUserDetails principal) {
         queryService.markAllRead(principal.getId());
+        pushUnreadCount(principal.getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -70,6 +78,7 @@ public class NotificationController {
             @AuthenticationPrincipal CustomUserDetails principal,
             @PathVariable Long id) {
         queryService.delete(principal.getId(), id);
+        pushUnreadCount(principal.getId());
         return ResponseEntity.noContent().build();
     }
 }

@@ -33,6 +33,6 @@ test.describe("catalog pages render", () => {
   test("unknown route shows the not-found page", async ({ page }) => {
     const res = await page.goto("/this-route-does-not-exist-xyz");
     expect(res?.status() ?? 404).toBeGreaterThanOrEqual(400);
-    await expect(page.getByText(/404|not found/i)).toBeVisible();
+    await expect(page.getByRole("heading", { name: /not found/i })).toBeVisible();
   });
 });

@@ -23,6 +23,8 @@ import { MovieRow } from "@/features/movies/components/MovieRow";
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
+import { CastRow } from "@/features/cast/components/CastRow";
+import { TrailerButton } from "@/features/trailers/components/TrailerButton";
 import { Navbar } from "@/components/navbar";
 import { useTranslate } from "@/hooks/useTranslate";
 import type { ApiError } from "@/types/auth";
@@ -45,7 +47,24 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-10">
+      {movie?.backdropUrl && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[85vh]"
+        >
+          <Image
+            src={movie.backdropUrl}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+            fetchPriority="high"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/85 to-background" />
+        </div>
+      )}
+      <main className="relative z-10 min-h-screen px-3 py-6 sm:px-4 sm:py-10">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <Link href="/movies">
             <Button variant="outline" size="sm">
@@ -76,10 +95,12 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
                   fill
                   sizes="(max-width: 768px) 50vw, 300px"
                   className="object-cover"
+                  priority
+                  fetchPriority="high"
                 />
               ) : (
                 <div className="flex h-full items-center justify-center text-muted-foreground">
-                  No image
+                  {t("media.noImage")}
                 </div>
               )}
             </div>
@@ -114,11 +135,18 @@ export function MovieDetailView({ movieId }: { movieId: number }) {
               <MyRatingDisplay kind="MOVIE" targetId={movie.id} variant="panel" />
 
               <div className="flex flex-wrap gap-2">
+                <TrailerButton kind="movie" id={movie.id} title={movie.title} />
                 <MediaFavoriteButton kind="MOVIE" targetId={movie.id} />
                 <AddToListPopover kind="MOVIE" targetId={movie.id} />
               </div>
             </div>
           </article>
+        )}
+
+        {validId && movie && (
+          <div className="pt-6">
+            <CastRow kind="movie" id={movie.id} />
+          </div>
         )}
 
         {validId && (

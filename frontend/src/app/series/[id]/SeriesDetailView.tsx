@@ -17,6 +17,8 @@ import {
 import { MediaFavoriteButton } from "@/features/cards/components/MediaFavoriteButton";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
 import { AddToListPopover } from "@/features/lists/components/AddToListPopover";
+import { CastRow } from "@/features/cast/components/CastRow";
+import { TrailerButton } from "@/features/trailers/components/TrailerButton";
 import { ReviewSectionsBlock } from "@/features/reviews/components/ReviewSectionsBlock";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { ReviewForm } from "@/features/reviews/components/ReviewForm";
@@ -43,7 +45,24 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
   return (
     <>
       <Navbar />
-      <main className="min-h-screen px-3 py-6 sm:px-4 sm:py-10">
+      {series?.backdropUrl && (
+        <div
+          aria-hidden
+          className="pointer-events-none fixed inset-x-0 top-0 z-0 h-[85vh]"
+        >
+          <Image
+            src={series.backdropUrl}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+            priority
+            fetchPriority="high"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-background/50 via-background/85 to-background" />
+        </div>
+      )}
+      <main className="relative z-10 min-h-screen px-3 py-6 sm:px-4 sm:py-10">
         <div className="mx-auto w-full max-w-5xl space-y-6">
           <Link href="/series">
             <Button variant="outline" size="sm">
@@ -73,10 +92,12 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                     fill
                     sizes="(max-width: 768px) 50vw, 300px"
                     className="object-cover"
+                    priority
+                    fetchPriority="high"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground">
-                    No image
+                    {t("media.noImage")}
                   </div>
                 )}
               </div>
@@ -131,11 +152,18 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                 <MyRatingDisplay kind="SERIES" targetId={series.id} variant="panel" />
 
                 <div className="flex flex-wrap gap-2">
+                  <TrailerButton kind="series" id={series.id} title={series.title} />
                   <MediaFavoriteButton kind="SERIES" targetId={series.id} />
                   <AddToListPopover kind="SERIES" targetId={series.id} />
                 </div>
               </div>
             </article>
+          )}
+
+          {validId && series && (
+            <div className="pt-6">
+              <CastRow kind="series" id={series.id} />
+            </div>
           )}
 
           {validId && (

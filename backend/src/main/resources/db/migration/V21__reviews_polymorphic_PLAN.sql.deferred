@@ -1,0 +1,31 @@
+-- =====================================================================
+-- V21 (PLANNED, NOT YET APPLIED — rename .deferred to .sql when ready)
+--
+-- Unify `reviews` + `series_reviews` into a single polymorphic table,
+-- mirroring the pattern already used by `review_replies` + `review_likes`.
+--
+-- Strategy (blue/green, no downtime):
+--   1. Create `reviews_v2(target_type, target_id, ...)` next to existing
+--      reviews and series_reviews. Same uniqueness + check rules.
+--   2. Backfill from both source tables. The `id` of each row is rewritten
+--      so reviews_v2.id space is fresh (BIGSERIAL). Keep a mapping table
+--      `_reviews_v2_mapping(legacy_kind, legacy_id, new_id)` so the
+--      reviewsocial.target_id polymorphic FKs (in review_likes,
+--      review_replies, notifications) can be retargeted atomically.
+--   3. Application toggle: read from reviews_v2 first, fall back to legacy.
+--   4. Once verified, retarget reviewsocial pointers using the mapping
+--      table, drop old `reviews` and `series_reviews`, drop mapping.
+--   5. Rename `reviews_v2` → `reviews`.
+--
+-- DO NOT enable this migration without:
+--   * a snapshot/backup of `reviews` and `series_reviews`,
+--   * a feature flag in the service layer to route reads,
+--   * regression tests covering ReviewSocialEnrichmentService,
+--     NotificationListener, ReplyService.
+--
+-- File suffix `.sql.deferred` keeps Flyway from picking it up. Rename to
+-- `V21__reviews_polymorphic.sql` once the application code is ready.
+-- =====================================================================
+
+-- (left intentionally empty so Flyway never tries to run this)
+SELECT 1;

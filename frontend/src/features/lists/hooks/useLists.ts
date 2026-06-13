@@ -104,6 +104,8 @@ export function useAddListItem(listId: number) {
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ["list-items", listId] });
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
+      qc.invalidateQueries({ queryKey: ["list"] });
       qc.invalidateQueries({ queryKey: ["in-my-lists", variables.kind, variables.targetId] });
     },
   });
@@ -116,6 +118,8 @@ export function useRemoveListItem(listId: number) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["list-items", listId] });
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
+      qc.invalidateQueries({ queryKey: ["list"] });
       qc.invalidateQueries({ queryKey: ["in-my-lists"] });
     },
   });

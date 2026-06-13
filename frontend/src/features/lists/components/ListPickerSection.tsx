@@ -5,6 +5,7 @@ import { BookmarkCheck, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { useTranslate } from "@/hooks/useTranslate";
 import {
   useAddListItem,
   useInMyLists,
@@ -21,6 +22,7 @@ interface Props {
 }
 
 export function ListPickerSection({ kind, targetId, onCreateClick }: Props) {
+  const t = useTranslate();
   const myLists = useMyLists();
   const inMyLists = useInMyLists(kind, targetId);
 
@@ -37,16 +39,18 @@ export function ListPickerSection({ kind, targetId, onCreateClick }: Props) {
   return (
     <>
       <div className="border-b border-border px-3 py-2 text-xs font-medium">
-        Save to list
+        {t("lists.pickerTitle")}
       </div>
 
       <div className="max-h-72 overflow-y-auto py-1">
         {myLists.isLoading && (
-          <p className="px-3 py-2 text-xs text-muted-foreground">Loading...</p>
+          <p className="px-3 py-2 text-xs text-muted-foreground">
+            {t("lists.pickerLoading")}
+          </p>
         )}
         {!myLists.isLoading && visibleLists.length === 0 && (
           <p className="px-3 py-2 text-xs text-muted-foreground">
-            You have no lists yet.
+            {t("lists.pickerEmpty")}
           </p>
         )}
         {visibleLists.map((list) => (
@@ -66,7 +70,7 @@ export function ListPickerSection({ kind, targetId, onCreateClick }: Props) {
         className="flex w-full items-center gap-2 border-t border-border px-3 py-2 text-sm hover:bg-muted"
       >
         <Plus className="size-4" />
-        Create new list
+        {t("lists.pickerCreateNew")}
       </button>
     </>
   );
@@ -83,6 +87,7 @@ function ListRow({
   targetId: number;
   inList: boolean;
 }) {
+  const t = useTranslate();
   const qc = useQueryClient();
   const add = useAddListItem(list.id);
   const remove = useRemoveListItem(list.id);
@@ -96,12 +101,12 @@ function ListRow({
       );
       if (item) {
         await remove.mutateAsync(item.id);
-        toast.success(`Removed from "${list.title}"`);
+        toast.success(t("lists.pickerItemRemoved", { title: list.title }));
         qc.invalidateQueries({ queryKey: ["in-my-lists", kind, targetId] });
       }
     } else {
       await add.mutateAsync({ kind, targetId });
-      toast.success(`Added to "${list.title}"`);
+      toast.success(t("lists.pickerItemAdded", { title: list.title }));
     }
   }
 

@@ -180,8 +180,8 @@ public class ListService {
         }
 
         ListItem saved = listItemRepository.save(builder.build());
-        list.setItemCount(list.getItemCount() + 1);
-        listRepository.save(list);
+        // Atomic counter bump — see ListRepository.incrementItemCount.
+        listRepository.incrementItemCount(list.getId());
 
         // Reload with associations populated.
         ListItem reloaded = listItemRepository.findById(saved.getId())
@@ -205,10 +205,8 @@ public class ListService {
         ListItem item = listItemRepository.findByIdAndListId(itemId, listId)
                 .orElseThrow(() -> new NotFoundException("Item not found"));
         listItemRepository.delete(item);
-        if (list.getItemCount() > 0) {
-            list.setItemCount(list.getItemCount() - 1);
-            listRepository.save(list);
-        }
+        // Atomic counter decrement clamped at zero (GREATEST(... -1, 0)).
+        listRepository.decrementItemCount(list.getId());
     }
 
     // ---------- Internals ----------

@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ListChecks, MoreVertical, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslate } from "@/hooks/useTranslate";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -24,6 +25,7 @@ interface Props {
 }
 
 export function ListCard({ list, preview, className, canManage, onDelete }: Props) {
+  const t = useTranslate();
   const posters = (preview ?? [])
     .map((i) => (i.movie?.imageUrl ?? i.series?.imageUrl) || null)
     .filter((u): u is string => Boolean(u))
@@ -71,8 +73,10 @@ export function ListCard({ list, preview, className, canManage, onDelete }: Prop
             <VisibilityBadge visibility={list.visibility} />
           </div>
           <p className="text-xs text-muted-foreground">
-            {list.itemCount} {list.itemCount === 1 ? "item" : "items"}
-            {list.isDefault && " · default"}
+            {list.itemCount === 1
+              ? t("lists.itemCountOne", { n: list.itemCount })
+              : t("lists.itemCountMany", { n: list.itemCount })}
+            {list.isDefault && ` · ${t("lists.defaultBadge")}`}
           </p>
         </div>
       </Link>

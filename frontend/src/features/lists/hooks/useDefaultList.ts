@@ -68,6 +68,11 @@ export function useDefaultList(defaultKind: DefaultListKind) {
     onSettled: (_data, _err, vars) => {
       qc.invalidateQueries({ queryKey: ["in-my-lists", vars.kind, vars.targetId] });
       qc.invalidateQueries({ queryKey: ["lists", "me"] });
+      qc.invalidateQueries({ queryKey: ["lists", "by-user"] });
+      qc.invalidateQueries({ queryKey: ["list"] });
+      if (list) {
+        qc.invalidateQueries({ queryKey: ["list-items", list.id] });
+      }
     },
   });
 

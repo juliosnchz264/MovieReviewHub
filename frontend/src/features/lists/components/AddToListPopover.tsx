@@ -5,6 +5,7 @@ import { Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/auth";
 import { cn } from "@/lib/utils";
+import { useTranslate } from "@/hooks/useTranslate";
 import { useCreateList, useInMyLists } from "@/features/lists/hooks/useLists";
 import { listsService } from "@/features/lists/services/lists.service";
 import { ListFormDialog, type ListFormValues } from "./ListFormDialog";
@@ -19,6 +20,7 @@ interface Props {
 }
 
 export function AddToListPopover({ kind, targetId, variant = "default", className }: Props) {
+  const t = useTranslate();
   const accessToken = useAuthStore((s) => s.accessToken);
   const [open, setOpen] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
@@ -57,15 +59,24 @@ export function AddToListPopover({ kind, targetId, variant = "default", classNam
       visibility: values.visibility,
     });
     await listsService.addItem(created.id, { kind, targetId });
-    toast.success(`Added to "${created.title}"`);
+    toast.success(t("lists.pickerItemAdded", { title: created.title }));
   }
 
   const Trigger = variant === "icon" ? IconTrigger : DefaultTrigger;
+  const activeLabel = t("actions.inLists");
+  const idleLabel = t("actions.save");
+  const ariaIdle = t("actions.addToList");
 
   return (
     <>
       <div ref={containerRef} className={cn("relative", className)}>
-        <Trigger active={isInAny} onClick={handleToggleOpen} />
+        <Trigger
+          active={isInAny}
+          onClick={handleToggleOpen}
+          activeLabel={activeLabel}
+          idleLabel={idleLabel}
+          ariaIdle={ariaIdle}
+        />
 
         {open && (
           <div
@@ -98,7 +109,15 @@ export function AddToListPopover({ kind, targetId, variant = "default", classNam
   );
 }
 
-function DefaultTrigger({ active, onClick }: { active: boolean; onClick: (e: React.MouseEvent) => void }) {
+interface TriggerProps {
+  active: boolean;
+  onClick: (e: React.MouseEvent) => void;
+  activeLabel: string;
+  idleLabel: string;
+  ariaIdle: string;
+}
+
+function DefaultTrigger({ active, onClick, activeLabel, idleLabel }: TriggerProps) {
   return (
     <button
       type="button"
@@ -110,17 +129,17 @@ function DefaultTrigger({ active, onClick }: { active: boolean; onClick: (e: Rea
       )}
     >
       {active ? <BookmarkCheck className="size-4" /> : <Bookmark className="size-4" />}
-      {active ? "In lists" : "Save"}
+      {active ? activeLabel : idleLabel}
     </button>
   );
 }
 
-function IconTrigger({ active, onClick }: { active: boolean; onClick: (e: React.MouseEvent) => void }) {
+function IconTrigger({ active, onClick, activeLabel, ariaIdle }: TriggerProps) {
   return (
     <button
       type="button"
       onClick={onClick}
-      aria-label={active ? "In lists" : "Add to list"}
+      aria-label={active ? activeLabel : ariaIdle}
       aria-haspopup="menu"
       className={cn(
         "rounded-full bg-background/80 p-1.5 backdrop-blur transition hover:bg-background"

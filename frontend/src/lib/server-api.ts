@@ -25,3 +25,21 @@ export async function fetchWithTimeout(
     clearTimeout(timeout);
   }
 }
+
+/**
+ * Safe JSON parser for server-side fetch. Returns null if the response is
+ * missing, non-2xx, missing a JSON content-type, or contains a body that
+ * doesn't parse as JSON. Prevents an HTML error page from a misconfigured
+ * backend host (or an upstream 404) bubbling up as a SyntaxError into the
+ * RSC tree and triggering the global error.tsx boundary.
+ */
+export async function safeJson<T>(res: Response | null): Promise<T | null> {
+  if (!res || !res.ok) return null;
+  const ct = res.headers.get("content-type") ?? "";
+  if (!ct.toLowerCase().includes("json")) return null;
+  try {
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}

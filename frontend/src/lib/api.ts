@@ -11,6 +11,23 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080/api/v1
 export const api = axios.create({
   baseURL: API_URL,
   withCredentials: true,
+  // Default Axios transformResponse blindly JSON.parses every body. If a
+  // misconfigured proxy or cold-started backend hands us an HTML error page
+  // ("<!doctype …"), the default throws SyntaxError into the component tree
+  // and trips the global error boundary. Parse defensively instead.
+  transformResponse: [
+    (data, headers) => {
+      if (typeof data !== "string") return data;
+      if (data.length === 0) return null;
+      const ct = String(headers?.["content-type"] ?? "").toLowerCase();
+      if (!ct.includes("json")) return data;
+      try {
+        return JSON.parse(data);
+      } catch {
+        return data;
+      }
+    },
+  ],
 });
 
 api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
@@ -24,11 +41,15 @@ api.interceptors.request.use((config: InternalAxiosRequestConfig) => {
 let refreshPromise: Promise<string> | null = null;
 
 async function refreshAccessToken(): Promise<string> {
-  const { data } = await axios.post<AuthResponse>(
-    `${API_URL}/auth/refresh`,
+  // Reuse the hardened `api` instance so we inherit transformResponse and
+  // never let an HTML body crash JSON.parse during a refresh attempt.
+  const { data } = await api.post<AuthResponse>(
+    "/auth/refresh",
     {},
-    { withCredentials: true }
   );
+  if (!data || typeof data !== "object" || typeof data.accessToken !== "string") {
+    throw new Error("Refresh response was not valid JSON");
+  }
   useAuthStore.getState().setSession(data.accessToken, data.user);
   return data.accessToken;
 }

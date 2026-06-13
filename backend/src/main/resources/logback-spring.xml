@@ -7,7 +7,7 @@
     <springProfile name="!prod">
         <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
             <encoder>
-                <pattern>%d{HH:mm:ss.SSS} %clr(%-5level) [%clr(%thread){faint}] %clr(%logger{36}){cyan} - %msg%n</pattern>
+                <pattern>%d{HH:mm:ss.SSS} %clr(%-5level) [%clr(%thread){faint}] %clr(%logger{36}){cyan} %clr(req=%X{requestId:-} user=%X{userId:-}){faint} - %msg%n</pattern>
             </encoder>
         </appender>
         <root level="INFO">

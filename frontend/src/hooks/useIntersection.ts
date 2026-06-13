@@ -11,7 +11,7 @@ export function useIntersection(
     if (!node || typeof IntersectionObserver === "undefined") return;
 
     const observer = new IntersectionObserver(([entry]) => {
-      setIntersecting(entry.isIntersecting);
+      if (entry) setIntersecting(entry.isIntersecting);
     }, options);
 
     observer.observe(node);

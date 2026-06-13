@@ -1,86 +1,79 @@
-"use client";
+import type { Metadata } from "next";
+import { UserProfileView } from "./UserProfileView";
+import { backendApiBase, fetchWithTimeout, safeJson } from "@/lib/server-api";
 
-import { use } from "react";
-import { notFound, useSearchParams } from "next/navigation";
-import { Navbar } from "@/components/navbar";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ProfileHero } from "@/features/profile/components/ProfileHero";
-import { ProfileStats } from "@/features/profile/components/ProfileStats";
-import {
-  ProfileTabs,
-  getVisibleTabs,
-  type ProfileTab,
-} from "@/features/profile/components/ProfileTabs";
-import { ProfileTabPanels } from "@/features/profile/components/ProfileTabPanels";
-import { usePublicProfile } from "@/features/profile/hooks/usePublicProfile";
-import { useAuthStore } from "@/store/auth";
+const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://movie-review-hub-tau.vercel.app";
 
-interface Props {
-  params: Promise<{ id: string }>;
+export const dynamic = "force-dynamic";
+
+interface PublicProfileLite {
+  id: number;
+  username: string;
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  bio?: string | null;
 }
 
-export default function UserPublicProfilePage({ params }: Props) {
-  const { id } = use(params);
-  const userId = Number(id);
-  const validId = Number.isFinite(userId) && userId > 0;
+async function fetchProfile(id: string): Promise<PublicProfileLite | null> {
+  if (!Number.isFinite(Number(id))) return null;
+  const apiBase = backendApiBase();
+  if (!apiBase) return null;
+  const res = await fetchWithTimeout(`${apiBase}/users/${id}/profile`, {
+    next: { revalidate: 300 },
+  });
+  return safeJson<PublicProfileLite>(res);
+}
 
-  const search = useSearchParams();
-  const viewerId = useAuthStore((s) => s.user?.id ?? null);
-  const isOwner = viewerId === userId;
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const profile = await fetchProfile(id);
 
-  const visibleTabs = getVisibleTabs(isOwner);
-  const rawTab = (search.get("tab") ?? "overview") as ProfileTab;
-  const activeTab: ProfileTab = visibleTabs.includes(rawTab) ? rawTab : "overview";
-
-  const profileQuery = usePublicProfile(validId ? userId : undefined);
-
-  if (!validId || profileQuery.isError) {
-    notFound();
+  if (!profile) {
+    return {
+      title: "Profile not found",
+      robots: { index: false },
+    };
   }
 
-  return (
-    <>
-      <Navbar />
-      <main className="pb-16">
-        {profileQuery.isLoading || !profileQuery.data ? (
-          <ProfileSkeleton />
-        ) : (
-          <>
-            <ProfileHero profile={profileQuery.data} isOwner={isOwner} />
-            <ProfileTabs active={activeTab} isOwner={isOwner} />
-            <div className="mx-auto mt-8 w-full max-w-5xl space-y-10 px-4">
-              {activeTab === "overview" && <ProfileStats profile={profileQuery.data} />}
-              <ProfileTabPanels
-                profile={profileQuery.data}
-                tab={activeTab}
-                isOwner={isOwner}
-              />
-            </div>
-          </>
-        )}
-      </main>
-    </>
-  );
+  const name = profile.displayName ?? profile.username;
+  const title = `${name} (@${profile.username})`;
+  const description =
+    profile.bio?.slice(0, 200) ??
+    `${name}'s movie and series reviews on MovieReviewHub.`;
+  const images = profile.avatarUrl ? [{ url: profile.avatarUrl, alt: name }] : [];
+  const canonical = `${SITE_URL}/users/${profile.id}`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      url: canonical,
+      images,
+    },
+    twitter: {
+      card: "summary",
+      title,
+      description,
+      images: profile.avatarUrl ? [profile.avatarUrl] : [],
+    },
+  };
 }
 
-function ProfileSkeleton() {
-  return (
-    <>
-      <Skeleton className="h-44 w-full sm:h-60 lg:h-72" />
-      <div className="mx-auto w-full max-w-5xl px-4">
-        <div className="-mt-12 flex flex-col items-center gap-3 sm:-mt-16 sm:flex-row sm:items-end">
-          <Skeleton className="size-24 rounded-full sm:size-32" />
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-40" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-        <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-          <Skeleton className="h-20 w-full" />
-        </div>
-      </div>
-    </>
-  );
+export default async function UserPublicProfilePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const userId = Number(id);
+  return <UserProfileView userId={userId} />;
 }

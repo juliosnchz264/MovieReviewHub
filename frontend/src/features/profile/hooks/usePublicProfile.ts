@@ -22,11 +22,24 @@ export function useUpdateMyProfile() {
   return useMutation({
     mutationFn: (req: UpdateProfileRequest) => profileService.updateMyProfile(req),
     onSuccess: (data) => {
-      // Authoritative snapshot for this profile id.
+      // Authoritative snapshot from the PATCH response — write directly to
+      // every key that mirrors this profile so observers re-render with the
+      // new value synchronously. DO NOT invalidateQueries for this same key:
+      // an immediate refetch can hit a replica that hasn't yet seen the
+      // commit (Supabase transaction pooler) and overwrite the fresh data
+      // with a stale snapshot, making the form revert and the profile view
+      // lag by several seconds.
       qc.setQueryData(["profile", "public", data.id], data);
-      // Other viewers of this profile (lists, etc) — drop and refetch on next mount.
-      qc.invalidateQueries({ queryKey: ["profile", "public"], refetchType: "none" });
-      // /auth/me drives Navbar / user-menu; trigger refetch.
+      // Mark other "public profile" keys stale (different ids viewed
+      // elsewhere) but don't refetch until they remount.
+      qc.invalidateQueries({
+        queryKey: ["profile", "public"],
+        refetchType: "none",
+        predicate: (q) => q.queryKey[2] !== data.id,
+      });
+      // /auth/me drives Navbar / user-menu. Refetch is safe here because the
+      // server returns the same authoritative User the JWT already pointed at,
+      // and the navbar tolerates a brief stale snapshot.
       qc.invalidateQueries({ queryKey: ["currentUser"] });
       // Mirror overlapping fields into the auth store so any component that
       // reads `useAuthStore.user` directly (Navbar fallback, sidebars, etc.)
@@ -78,13 +91,27 @@ export function useUpdateAccountSettings() {
   });
 }
 
+function patchAvatarInProfileCaches(qc: ReturnType<typeof useQueryClient>, user: User) {
+  // The avatar endpoint returns a User, not the full PublicProfile, so we
+  // patch the avatarUrl field on every cached profile that points at this
+  // user id and leave the rest untouched. No refetch — same read-after-write
+  // hazard described in useUpdateMyProfile.
+  qc.setQueriesData<{ id: number; avatarUrl: string | null } & Record<string, unknown>>(
+    { queryKey: ["profile", "public"] },
+    (prev) => {
+      if (!prev || prev.id !== user.id) return prev;
+      return { ...prev, avatarUrl: user.avatarUrl };
+    },
+  );
+}
+
 export function useUploadAvatar() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (file: File) => profileService.uploadAvatar(file),
     onSuccess: (data: User) => {
       qc.setQueryData(["currentUser"], data);
-      qc.invalidateQueries({ queryKey: ["profile", "public"] });
+      patchAvatarInProfileCaches(qc, data);
       useAuthStore.getState().setUser(data);
     },
   });
@@ -96,7 +123,7 @@ export function useRemoveAvatar() {
     mutationFn: () => profileService.removeAvatar(),
     onSuccess: (data: User) => {
       qc.setQueryData(["currentUser"], data);
-      qc.invalidateQueries({ queryKey: ["profile", "public"] });
+      patchAvatarInProfileCaches(qc, data);
       useAuthStore.getState().setUser(data);
     },
   });

@@ -126,7 +126,7 @@ function PublicListsSection({ profile, isOwner }: { profile: PublicProfile; isOw
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <h2 id="lists-heading" className="text-xl font-semibold tracking-tight">
-            {t("profile.publicLists")}
+            {isOwner ? t("profile.yourLists") : t("profile.publicLists")}
           </h2>
           {count > 0 && (
             <span className="text-sm text-muted-foreground">{count}</span>

@@ -1,25 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthStore } from "@/store/auth";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { AccountSettingsForm } from "@/features/profile/components/AccountSettingsForm";
 import { useAccountSettings } from "@/features/profile/hooks/usePublicProfile";
 import { useTranslate } from "@/hooks/useTranslate";
 
 export default function AccountSettingsPage() {
   const t = useTranslate();
-  const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { ready, authed } = useRequireAuth();
   const { data, isLoading } = useAccountSettings();
 
-  useEffect(() => {
-    if (!accessToken) router.replace("/login");
-  }, [accessToken, router]);
-
-  if (!accessToken) return null;
+  if (!ready || !authed) return null;
 
   return (
     <>

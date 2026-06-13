@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Navbar } from "@/components/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthStore } from "@/store/auth";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { usePublicProfile } from "@/features/profile/hooks/usePublicProfile";
 import { EditProfileForm } from "@/features/profile/components/EditProfileForm";
@@ -12,16 +10,11 @@ import { useTranslate } from "@/hooks/useTranslate";
 
 export default function EditProfilePage() {
   const t = useTranslate();
-  const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { ready, authed } = useRequireAuth();
   const { data: user } = useCurrentUser();
   const profile = usePublicProfile(user?.id);
 
-  useEffect(() => {
-    if (!accessToken) router.replace("/login");
-  }, [accessToken, router]);
-
-  if (!accessToken) return null;
+  if (!ready || !authed) return null;
 
   return (
     <>

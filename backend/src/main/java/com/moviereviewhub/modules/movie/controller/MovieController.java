@@ -51,6 +51,12 @@ public class MovieController {
         return ResponseEntity.ok(movieService.findById(id));
     }
 
+    /** Canonical lookup by slug (or opaque public_id fallback). */
+    @GetMapping("/{slug:(?!lookup$|trending$|top-rated$)(?!\\d+$)[A-Za-z0-9-]+}")
+    public ResponseEntity<MovieResponse> findBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(movieService.findByPublicKey(slug));
+    }
+
     @GetMapping("/lookup")
     public ResponseEntity<Map<Long, Long>> lookup(@RequestParam List<Long> tmdbIds) {
         return ResponseEntity.ok(movieService.lookupByTmdbIds(tmdbIds));

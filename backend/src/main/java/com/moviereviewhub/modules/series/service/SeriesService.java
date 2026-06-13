@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 public class SeriesService {
 
     private final SeriesRepository seriesRepository;
+    private final com.moviereviewhub.common.slug.PublicIdentifierFactory publicIdentifierFactory;
 
     @Transactional(readOnly = true)
     public PagedResponse<SeriesResponse> search(String title, String genre, Pageable pageable) {
@@ -58,6 +59,17 @@ public class SeriesService {
         return SeriesResponse.from(series);
     }
 
+    /** Resolve by numeric id (legacy/redirect), slug (canonical) or public_id. */
+    @Transactional(readOnly = true)
+    public SeriesResponse findByPublicKey(String key) {
+        java.util.Optional<Series> found = key.matches("\\d+")
+                ? seriesRepository.findByIdAndDeletedFalse(Long.parseLong(key))
+                : seriesRepository.findBySlugAndDeletedFalse(key)
+                        .or(() -> seriesRepository.findByPublicIdAndDeletedFalse(key));
+        return SeriesResponse.from(found
+                .orElseThrow(() -> new NotFoundException("Series not found: " + key)));
+    }
+
     /**
      * Devuelve mapa tmdbId -> id catalogo. Vease MovieService#lookupByTmdbIds.
      */
@@ -80,6 +92,8 @@ public class SeriesService {
                 .lastAirDate(req.lastAirDate())
                 .numberOfSeasons(req.numberOfSeasons())
                 .numberOfEpisodes(req.numberOfEpisodes())
+                .slug(publicIdentifierFactory.uniqueSlug(req.title(), seriesRepository::existsBySlug))
+                .publicId(publicIdentifierFactory.uniquePublicId(seriesRepository::existsByPublicId))
                 .build();
         return SeriesResponse.from(seriesRepository.save(series));
     }

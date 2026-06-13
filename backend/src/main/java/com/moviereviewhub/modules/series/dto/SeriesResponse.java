@@ -8,6 +8,8 @@ import java.util.List;
 
 public record SeriesResponse(
         Long id,
+        String slug,
+        String publicId,
         String title,
         String description,
         List<String> genres,
@@ -23,6 +25,8 @@ public record SeriesResponse(
     public static SeriesResponse from(Series s) {
         return new SeriesResponse(
                 s.getId(),
+                s.getSlug(),
+                s.getPublicId(),
                 s.getTitle(),
                 s.getDescription(),
                 s.getGenres(),

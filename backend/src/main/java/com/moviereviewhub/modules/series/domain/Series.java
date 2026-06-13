@@ -65,6 +65,14 @@ public class Series extends BaseEntity {
     @Column(name = "tmdb_id", unique = true)
     private Long tmdbId;
 
+    /** SEO-friendly public identifier (canonical URL). Unique; may change on rename. */
+    @Column(name = "slug", nullable = false, length = 160)
+    private String slug;
+
+    /** Opaque, immutable public id (anti-enumeration, rename-proof fallback). */
+    @Column(name = "public_id", nullable = false, length = 16, updatable = false)
+    private String publicId;
+
     // Denormalized rating stats maintained by DB triggers (V20). Read-only.
     @Column(name = "rating_avg", precision = 4, scale = 2, insertable = false, updatable = false)
     private BigDecimal ratingAvg;

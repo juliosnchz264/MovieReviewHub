@@ -16,6 +16,14 @@ public interface MovieRepository extends JpaRepository<Movie, Long> {
 
     Optional<Movie> findByIdAndDeletedFalse(Long id);
 
+    Optional<Movie> findBySlugAndDeletedFalse(String slug);
+
+    Optional<Movie> findByPublicIdAndDeletedFalse(String publicId);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsByPublicId(String publicId);
+
     Optional<Movie> findByTmdbId(Long tmdbId);
 
     List<Movie> findByTmdbIdInAndDeletedFalse(Collection<Long> tmdbIds);

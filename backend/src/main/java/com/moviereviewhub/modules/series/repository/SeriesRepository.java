@@ -16,6 +16,14 @@ public interface SeriesRepository extends JpaRepository<Series, Long> {
 
     Optional<Series> findByIdAndDeletedFalse(Long id);
 
+    Optional<Series> findBySlugAndDeletedFalse(String slug);
+
+    Optional<Series> findByPublicIdAndDeletedFalse(String publicId);
+
+    boolean existsBySlug(String slug);
+
+    boolean existsByPublicId(String publicId);
+
     Optional<Series> findByTmdbId(Long tmdbId);
 
     List<Series> findByTmdbIdInAndDeletedFalse(Collection<Long> tmdbIds);

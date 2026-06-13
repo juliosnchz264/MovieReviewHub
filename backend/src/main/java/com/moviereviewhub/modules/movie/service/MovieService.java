@@ -19,6 +19,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class MovieService {
 
     private final MovieRepository movieRepository;
+    private final com.moviereviewhub.common.slug.PublicIdentifierFactory publicIdentifierFactory;
 
     @Transactional(readOnly = true)
     public PagedResponse<MovieResponse> search(String title, String genre, Pageable pageable) {
@@ -59,6 +61,20 @@ public class MovieService {
     }
 
     /**
+     * Resolve a public route key: numeric id (legacy / redirect), slug
+     * (canonical), or opaque public_id (rename-proof fallback).
+     */
+    @Transactional(readOnly = true)
+    public MovieResponse findByPublicKey(String key) {
+        Optional<Movie> found = key.matches("\\d+")
+                ? movieRepository.findByIdAndDeletedFalse(Long.parseLong(key))
+                : movieRepository.findBySlugAndDeletedFalse(key)
+                        .or(() -> movieRepository.findByPublicIdAndDeletedFalse(key));
+        return MovieResponse.from(found
+                .orElseThrow(() -> new NotFoundException("Movie not found: " + key)));
+    }
+
+    /**
      * Devuelve mapa tmdbId -> id catalogo, solo entradas existentes (no incluye
      * ids no encontrados). Usado por la pagina de Awards para decidir si
      * linkea a /movies/{id} interno o a TMDB externo.
@@ -79,6 +95,8 @@ public class MovieService {
                 .genres(req.genres() == null ? List.of() : req.genres())
                 .imageUrl(req.imageUrl())
                 .releaseDate(req.releaseDate())
+                .slug(publicIdentifierFactory.uniqueSlug(req.title(), movieRepository::existsBySlug))
+                .publicId(publicIdentifierFactory.uniquePublicId(movieRepository::existsByPublicId))
                 .build();
         return MovieResponse.from(movieRepository.save(movie));
     }

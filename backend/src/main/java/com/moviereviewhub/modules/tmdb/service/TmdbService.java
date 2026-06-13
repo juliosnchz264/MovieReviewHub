@@ -58,6 +58,7 @@ public class TmdbService {
     private final TmdbProperties tmdbProperties;
     private final MovieRepository movieRepository;
     private final SeriesRepository seriesRepository;
+    private final com.moviereviewhub.common.slug.PublicIdentifierFactory publicIdentifierFactory;
 
     /**
      * Lazy self-lookup so calls inside syncAwards() to importMovie / importSeries
@@ -136,6 +137,8 @@ public class TmdbService {
                 .backdropUrl(buildBackdropUrl(details.backdropPath()))
                 .releaseDate(parseDate(details.releaseDate()))
                 .tmdbId(details.id())
+                .slug(publicIdentifierFactory.uniqueSlug(details.title(), movieRepository::existsBySlug))
+                .publicId(publicIdentifierFactory.uniquePublicId(movieRepository::existsByPublicId))
                 .build();
 
         return MovieResponse.from(movieRepository.save(movie));
@@ -341,6 +344,8 @@ public class TmdbService {
                 .numberOfSeasons(details.numberOfSeasons())
                 .numberOfEpisodes(details.numberOfEpisodes())
                 .tmdbId(details.id())
+                .slug(publicIdentifierFactory.uniqueSlug(details.name(), seriesRepository::existsBySlug))
+                .publicId(publicIdentifierFactory.uniquePublicId(seriesRepository::existsByPublicId))
                 .build();
 
         return SeriesResponse.from(seriesRepository.save(series));

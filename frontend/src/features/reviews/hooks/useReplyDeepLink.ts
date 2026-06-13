@@ -65,7 +65,8 @@ export function useReplyDeepLink() {
     // Chain is ordered root → ... → target. Every node except the target
     // itself needs to be expanded so the target actually renders.
     for (let i = 0; i < chain.length - 1; i++) {
-      set.add(chain[i].id);
+      const node = chain[i];
+      if (node) set.add(node.id);
     }
     return set;
   }, [ancestryQuery.data]);

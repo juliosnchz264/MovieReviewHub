@@ -295,6 +295,7 @@ export function useCreateReply(kind: ReviewKind, reviewId: number) {
         qc.setQueryData<ReplyInfinite>(topLevelKey, (old) => {
           if (!old || old.pages.length === 0) return old;
           const [first, ...rest] = old.pages;
+          if (!first) return old;
           return {
             ...old,
             pages: [

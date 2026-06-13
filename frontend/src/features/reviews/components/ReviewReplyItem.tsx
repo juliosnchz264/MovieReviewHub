@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { MessageSquare, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UserAvatar } from "@/features/reviews/components/UserAvatar";
 import { ReplyLikeButton } from "@/features/reviews/components/ReplyLikeButton";
 import { ReviewReplyForm } from "@/features/reviews/components/ReviewReplyForm";
@@ -12,6 +13,7 @@ import {
   useUpdateReply,
 } from "@/features/reviews/hooks/useReviewSocial";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useIsAdmin } from "@/features/auth/hooks/useIsAdmin";
 import { useAuthStore } from "@/store/auth";
 import { useTranslate } from "@/hooks/useTranslate";
 import type { ReviewKind, ReviewReply } from "@/types/review";
@@ -38,15 +40,22 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
   const [replying, setReplying] = useState(false);
   const [draft, setDraft] = useState(reply.body);
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const update = useUpdateReply(kind, reviewId);
   const remove = useDeleteReply(kind, reviewId);
   const { data: currentUser } = useCurrentUser();
+  const { isAdmin } = useIsAdmin();
   const accessToken = useAuthStore((s) => s.accessToken);
 
   const edited = reply.updatedAt !== reply.createdAt;
   const ownReply = currentUser?.id === reply.userId;
   const canReply = !!accessToken && reply.depth < MAX_DEPTH;
+  // Defense-in-depth: server already gates via reply.canEdit/canDelete, but a
+  // stale cache or an account swap could leak flags. Final UI gate matches
+  // server rule: only reply author may edit, author OR admin may delete.
+  const showEdit = reply.canEdit && ownReply;
+  const showDelete = reply.canDelete && (ownReply || isAdmin);
 
   const onSave = () => {
     const body = draft.trim();
@@ -65,12 +74,13 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
     );
   };
 
-  const onDelete = () => {
-    if (!confirm(t("reviews.replyDeleteConfirm"))) return;
-    remove.mutate(reply.id);
+  const onDeleteConfirm = async () => {
+    await remove.mutateAsync(reply.id);
+    setConfirmDelete(false);
   };
 
   return (
+    <>
     <article
       id={`reply-${reply.id}`}
       className="flex gap-3 rounded-xl border border-border/60 bg-card/40 p-4 transition-shadow"
@@ -147,7 +157,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
                 {t("reviews.replyAction")}
               </Button>
             )}
-            {reply.canEdit && (
+            {showEdit && (
               <Button
                 size="xs"
                 variant="ghost"
@@ -158,11 +168,11 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
                 {t("reviews.replyEditAction")}
               </Button>
             )}
-            {reply.canDelete && (
+            {showDelete && (
               <Button
                 size="xs"
                 variant="ghost"
-                onClick={onDelete}
+                onClick={() => setConfirmDelete(true)}
                 disabled={remove.isPending}
                 aria-label={t("reviews.replyDeleteAction")}
                 className="text-muted-foreground hover:text-destructive"
@@ -192,5 +202,16 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
         )}
       </div>
     </article>
+
+    <ConfirmDialog
+      open={confirmDelete}
+      title={t("reviews.replyDeleteConfirm")}
+      confirmLabel={t("reviews.replyDeleteAction")}
+      cancelLabel={t("common.cancel")}
+      destructive
+      onConfirm={onDeleteConfirm}
+      onClose={() => setConfirmDelete(false)}
+    />
+    </>
   );
 }

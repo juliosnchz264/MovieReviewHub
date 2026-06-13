@@ -15,6 +15,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.Builder.Default;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -68,4 +69,9 @@ public class ReviewReply extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "TEXT")
     private String body;
+
+    // Denormalized counter maintained by DB trigger (V19). Read-only.
+    @Default
+    @Column(name = "like_count", nullable = false, insertable = false, updatable = false)
+    private Integer likeCount = 0;
 }

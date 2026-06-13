@@ -10,5 +10,7 @@ public record ReviewCardSource(
         Instant updatedAt,
         Long authorId,
         String authorUsername,
-        String authorAvatarUrl
+        String authorAvatarUrl,
+        long likeCount,
+        long replyCount
 ) {}

@@ -4,7 +4,6 @@ import com.moviereviewhub.modules.favorite.repository.FavoriteRepository;
 import com.moviereviewhub.modules.reviewsocial.domain.ReviewTargetType;
 import com.moviereviewhub.modules.reviewsocial.dto.ReviewCardResponse;
 import com.moviereviewhub.modules.reviewsocial.dto.ReviewCardSource;
-import com.moviereviewhub.modules.reviewsocial.dto.TargetCountRow;
 import com.moviereviewhub.modules.reviewsocial.repository.ReviewLikeRepository;
 import com.moviereviewhub.modules.reviewsocial.repository.ReviewReplyRepository;
 import com.moviereviewhub.modules.seriesfavorite.repository.SeriesFavoriteRepository;
@@ -15,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -52,11 +50,8 @@ public class ReviewSocialEnrichmentService {
                 .map(ReviewCardSource::authorId)
                 .collect(Collectors.toCollection(HashSet::new));
 
-        Map<Long, Long> likeCounts = toCountMap(
-                likeRepository.countLikesGrouped(kind, reviewIds));
-        Map<Long, Long> replyCounts = toCountMap(
-                replyRepository.countRepliesGrouped(kind, reviewIds));
-
+        // like/reply counts ya vienen denormalizados en el source (V19 triggers).
+        // Solo el "likedByMe" sigue siendo per-user, requiere 1 query.
         Set<Long> likedByMe = currentUserId == null
                 ? Collections.emptySet()
                 : new HashSet<>(likeRepository.findLikedTargetIds(
@@ -82,20 +77,13 @@ public class ReviewSocialEnrichmentService {
                         targetTitle,
                         targetPosterUrl,
                         authorFavorited.contains(s.authorId()),
-                        likeCounts.getOrDefault(s.id(), 0L),
-                        replyCounts.getOrDefault(s.id(), 0L),
+                        s.likeCount(),
+                        s.replyCount(),
                         likedByMe.contains(s.id()),
                         s.createdAt(),
                         s.updatedAt()
                 ))
                 .toList();
-    }
-
-    private static Map<Long, Long> toCountMap(List<TargetCountRow> rows) {
-        return rows.stream().collect(Collectors.toMap(
-                TargetCountRow::targetId,
-                TargetCountRow::count,
-                (a, b) -> a));
     }
 
     public ReviewCardResponse enrichSingle(

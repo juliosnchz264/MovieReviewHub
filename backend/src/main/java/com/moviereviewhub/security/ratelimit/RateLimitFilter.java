@@ -32,7 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final List<String> RATE_LIMITED_PATTERNS = List.of(
+    // Tight tier: credential / account-mutation endpoints. Brute-force guard.
+    private static final List<String> AUTH_PATTERNS = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/register",
             "/api/v1/auth/refresh",
@@ -43,7 +44,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/login/oauth2/code/**"
     );
 
-    private static final int CAPACITY = 10;
+    // Looser tier: public catalog reads. Generous enough for real users and
+    // SEO crawlers, low enough to blunt bulk scraping / resource enumeration.
+    private static final List<String> READ_PATTERNS = List.of(
+            "/api/v1/movies/**",
+            "/api/v1/series/**",
+            "/api/v1/people/**",
+            "/api/v1/users/*/profile",
+            "/api/v1/users/*/lists"
+    );
+
+    private static final int AUTH_CAPACITY = 10;
+    private static final int READ_CAPACITY = 100;
     private static final Duration WINDOW = Duration.ofMinutes(1);
     private static final int MAX_BUCKETS = 10_000;
 
@@ -60,17 +72,21 @@ public class RateLimitFilter extends OncePerRequestFilter {
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
 
-        if (!isRateLimited(request.getRequestURI())) {
+        int capacity = capacityFor(request.getRequestURI());
+        if (capacity == 0) {
             chain.doFilter(request, response);
             return;
         }
 
         String ip = clientIp(request);
-        Entry entry = buckets.compute(ip, (k, current) -> {
+        // Key by ip + tier so a client's catalog reads and auth attempts use
+        // independent buckets (a burst of reads must not lock out login).
+        String key = ip + ":" + capacity;
+        Entry entry = buckets.compute(key, (k, current) -> {
             if (current != null) return current.touch();
             return new Entry(
                     Bucket.builder()
-                            .addLimit(Bandwidth.builder().capacity(CAPACITY).refillIntervally(CAPACITY, WINDOW).build())
+                            .addLimit(Bandwidth.builder().capacity(capacity).refillIntervally(capacity, WINDOW).build())
                             .build(),
                     System.currentTimeMillis()
             );
@@ -95,8 +111,15 @@ public class RateLimitFilter extends OncePerRequestFilter {
         response.getWriter().write(objectMapper.writeValueAsString(body));
     }
 
-    private boolean isRateLimited(String uri) {
-        for (String pattern : RATE_LIMITED_PATTERNS) {
+    /** 0 = not limited; otherwise the per-minute capacity for the matched tier. */
+    private int capacityFor(String uri) {
+        if (matchesAny(uri, AUTH_PATTERNS)) return AUTH_CAPACITY;
+        if (matchesAny(uri, READ_PATTERNS)) return READ_CAPACITY;
+        return 0;
+    }
+
+    private boolean matchesAny(String uri, List<String> patterns) {
+        for (String pattern : patterns) {
             if (pattern.equals(uri)) return true;
             if (pattern.contains("*") && pathMatcher.match(pattern, uri)) return true;
         }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -24,6 +24,8 @@ import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useLogout } from "@/features/auth/hooks/useLogout";
 import { useTranslate } from "@/hooks/useTranslate";
 
+const noopSubscribe = () => () => {};
+
 export function UserMenu() {
   const t = useTranslate();
   const router = useRouter();
@@ -33,12 +35,13 @@ export function UserMenu() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const [open, setOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  // true only after client hydration — avoids setState-in-effect mount guard.
+  const mounted = useSyncExternalStore(
+    noopSubscribe,
+    () => true,
+    () => false
+  );
   const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {

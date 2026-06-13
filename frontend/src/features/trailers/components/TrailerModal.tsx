@@ -27,14 +27,10 @@ interface Props {
  */
 export function TrailerModal({ open, youtubeKey, title, onClose }: Props) {
   const t = useTranslate();
-  const [loaded, setLoaded] = useState(false);
-  const [errored, setErrored] = useState(false);
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    setLoaded(false);
-    setErrored(false);
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
     }
@@ -98,33 +94,45 @@ export function TrailerModal({ open, youtubeKey, title, onClose }: Props) {
             </button>
           </div>
 
-          <div className="relative aspect-video w-full bg-black">
-            {!loaded && !errored && (
-              <div className="absolute inset-0 flex items-center justify-center text-white/70">
-                <Loader2 className="size-6 animate-spin" aria-hidden />
-                <span className="sr-only">{t("trailer.loading")}</span>
-              </div>
-            )}
-            {errored ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-white/80">
-                {t("trailer.error")}
-              </div>
-            ) : (
-              <iframe
-                src={src}
-                title={title}
-                className="absolute inset-0 size-full"
-                allow="autoplay; encrypted-media; picture-in-picture"
-                allowFullScreen
-                sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
-                referrerPolicy="strict-origin-when-cross-origin"
-                onLoad={() => setLoaded(true)}
-                onError={() => setErrored(true)}
-              />
-            )}
-          </div>
+          {/* Keyed by youtubeKey so a new trailer remounts with fresh
+              loading state — avoids resetting state inside an effect. */}
+          <TrailerFrame key={youtubeKey} src={src} title={title} />
         </div>
       </div>
     </ClientPortal>
+  );
+}
+
+function TrailerFrame({ src, title }: { src: string; title: string }) {
+  const t = useTranslate();
+  const [loaded, setLoaded] = useState(false);
+  const [errored, setErrored] = useState(false);
+
+  return (
+    <div className="relative aspect-video w-full bg-black">
+      {!loaded && !errored && (
+        <div className="absolute inset-0 flex items-center justify-center text-white/70">
+          <Loader2 className="size-6 animate-spin" aria-hidden />
+          <span className="sr-only">{t("trailer.loading")}</span>
+        </div>
+      )}
+      {errored ? (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-sm text-white/80">
+          {t("trailer.error")}
+        </div>
+      ) : (
+        <iframe
+          src={src}
+          title={title}
+          className="absolute inset-0 size-full"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowFullScreen
+          sandbox="allow-scripts allow-same-origin allow-presentation allow-popups"
+          referrerPolicy="strict-origin-when-cross-origin"
+          onLoad={() => setLoaded(true)}
+          onError={() => setErrored(true)}
+        />
+      )}
+    </div>
   );
 }

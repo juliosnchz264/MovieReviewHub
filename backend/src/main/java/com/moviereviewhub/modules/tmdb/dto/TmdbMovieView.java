@@ -12,6 +12,7 @@ public record TmdbMovieView(
         String title,
         String overview,
         String posterUrl,
+        String backdropUrl,
         String releaseDate,
         List<String> genres,
         Double voteAverage,

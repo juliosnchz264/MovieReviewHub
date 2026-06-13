@@ -14,6 +14,9 @@ public record TmdbMovie(
         @JsonProperty("poster_path")
         String posterPath,
 
+        @JsonProperty("backdrop_path")
+        String backdropPath,
+
         @JsonProperty("release_date")
         String releaseDate,
 

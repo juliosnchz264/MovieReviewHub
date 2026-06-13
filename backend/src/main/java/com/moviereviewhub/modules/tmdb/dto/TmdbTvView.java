@@ -11,6 +11,7 @@ public record TmdbTvView(
         String title,
         String overview,
         String posterUrl,
+        String backdropUrl,
         String firstAirDate,
         String lastAirDate,
         Integer numberOfSeasons,

@@ -2,6 +2,7 @@ package com.moviereviewhub.modules.tmdb.controller;
 
 import com.moviereviewhub.modules.movie.dto.MovieResponse;
 import com.moviereviewhub.modules.series.dto.SeriesResponse;
+import com.moviereviewhub.modules.tmdb.dto.AutoLinkResult;
 import com.moviereviewhub.modules.tmdb.dto.AwardSyncRequest;
 import com.moviereviewhub.modules.tmdb.dto.AwardSyncResult;
 import com.moviereviewhub.modules.tmdb.dto.GenreRefreshResult;
@@ -77,6 +78,42 @@ public class TmdbController {
     @PostMapping("/refresh-genres/series")
     public ResponseEntity<GenreRefreshResult> refreshSeriesGenres() {
         return ResponseEntity.ok(tmdbService.refreshSeriesGenres());
+    }
+
+    @PostMapping("/refresh-backdrops")
+    public ResponseEntity<GenreRefreshResult> refreshBackdrops() {
+        return ResponseEntity.ok(tmdbService.refreshBackdrops());
+    }
+
+    // -----------------------------------------------------------------
+    // TMDB linking — fixes rows imported before the TMDB integration
+    // existed (no tmdb_id, so cast + trailer return empty).
+    // -----------------------------------------------------------------
+
+    @PostMapping("/link/movie/{movieId}")
+    public ResponseEntity<MovieResponse> linkMovie(
+            @PathVariable Long movieId,
+            @RequestParam Long tmdbId
+    ) {
+        return ResponseEntity.ok(tmdbService.linkMovieToTmdb(movieId, tmdbId));
+    }
+
+    @PostMapping("/link/series/{seriesId}")
+    public ResponseEntity<SeriesResponse> linkSeries(
+            @PathVariable Long seriesId,
+            @RequestParam Long tmdbId
+    ) {
+        return ResponseEntity.ok(tmdbService.linkSeriesToTmdb(seriesId, tmdbId));
+    }
+
+    @PostMapping("/auto-link/movies")
+    public ResponseEntity<AutoLinkResult> autoLinkMovies() {
+        return ResponseEntity.ok(tmdbService.autoLinkMovies());
+    }
+
+    @PostMapping("/auto-link/series")
+    public ResponseEntity<AutoLinkResult> autoLinkSeries() {
+        return ResponseEntity.ok(tmdbService.autoLinkSeries());
     }
 
     @PostMapping("/awards/sync")

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { ReviewDetailView } from "@/features/reviews/components/ReviewDetailView";
-import { backendApiBase, fetchWithTimeout } from "@/lib/server-api";
+import { backendApiBase, fetchWithTimeout, safeJson } from "@/lib/server-api";
 import type { ReviewCard } from "@/types/review";
 
 export const dynamic = "force-dynamic";
@@ -12,8 +12,7 @@ async function fetchReview(id: string): Promise<ReviewCard | null> {
   const res = await fetchWithTimeout(`${apiBase}/series-reviews/${id}`, {
     next: { revalidate: 60 },
   });
-  if (!res || !res.ok) return null;
-  return (await res.json()) as ReviewCard;
+  return safeJson<ReviewCard>(res);
 }
 
 export async function generateMetadata({

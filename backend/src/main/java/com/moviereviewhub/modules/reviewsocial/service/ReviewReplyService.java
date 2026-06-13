@@ -306,11 +306,14 @@ public class ReviewReplyService {
         if (!isOwner && !isAdmin) {
             throw new UnauthorizedException("Cannot delete this reply");
         }
-        reply.setDeleted(true);
-        replyRepository.save(reply);
-        // Drop any pending notifications pointing at this reply so the bell
-        // does not surface a tombstone.
-        eventPublisher.publishEvent(new ReplyDeletedEvent(replyId));
+        // Cascade: removing a comment removes its entire sub-thread (social-feed
+        // behaviour) so nothing is orphaned and the reply_count trigger drops
+        // every removed row. Notifications for each removed reply are purged.
+        List<Long> subtreeIds = replyRepository.findSubtreeIds(replyId);
+        replyRepository.softDeleteByIds(subtreeIds);
+        for (Long id : subtreeIds) {
+            eventPublisher.publishEvent(new ReplyDeletedEvent(id));
+        }
     }
 
     private void ensureReviewExists(ReviewTargetType type, Long reviewId) {

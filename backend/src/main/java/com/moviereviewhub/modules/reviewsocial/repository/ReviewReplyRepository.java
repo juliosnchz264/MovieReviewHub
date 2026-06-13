@@ -36,34 +36,43 @@ public interface ReviewReplyRepository extends JpaRepository<ReviewReply, Long> 
     /**
      * Top-level replies only (parent_reply_id IS NULL). Threaded UI paginates
      * roots; descendants load on demand via {@link #findThreadByRoot}.
-     *
-     * Includes a deleted root when it still has at least one active descendant
-     * (sharing root_reply_id) so the live sub-thread is not orphaned — the
-     * deleted root renders as a tombstone. A deleted root with no surviving
-     * descendants stays hidden.
+     * Deleting a reply cascades to its whole subtree, so a deleted reply never
+     * anchors a live thread — only active rows are returned.
      */
-    @Query(value = """
+    @Query("""
             SELECT r FROM ReviewReply r
             JOIN FETCH r.user
             WHERE r.targetType = :t AND r.targetId = :id
               AND r.parentReplyId IS NULL
-              AND (r.deleted = false
-                   OR EXISTS (SELECT 1 FROM ReviewReply c
-                              WHERE c.rootReplyId = r.id AND c.deleted = false))
+              AND r.deleted = false
             ORDER BY r.createdAt ASC, r.id ASC
-            """,
-            countQuery = """
-            SELECT COUNT(r) FROM ReviewReply r
-            WHERE r.targetType = :t AND r.targetId = :id
-              AND r.parentReplyId IS NULL
-              AND (r.deleted = false
-                   OR EXISTS (SELECT 1 FROM ReviewReply c
-                              WHERE c.rootReplyId = r.id AND c.deleted = false))
             """)
     Page<ReviewReply> findTopLevelByTarget(
             @Param("t") ReviewTargetType targetType,
             @Param("id") Long targetId,
             Pageable pageable);
+
+    /**
+     * Ids of an entire reply subtree rooted at {@code rootId} (inclusive),
+     * walking parent → child. Bounded by MAX_DEPTH. Used to cascade a delete
+     * so removing a comment also removes every nested reply under it, like a
+     * social feed.
+     */
+    @Query(value = """
+            WITH RECURSIVE sub AS (
+                SELECT id FROM review_replies WHERE id = :rootId
+                UNION ALL
+                SELECT r.id FROM review_replies r
+                  JOIN sub ON r.parent_reply_id = sub.id
+            )
+            SELECT id FROM sub
+            """, nativeQuery = true)
+    List<Long> findSubtreeIds(@Param("rootId") Long rootId);
+
+    /** Bulk soft-delete by id; the count trigger fires per row. */
+    @Modifying
+    @Query("UPDATE ReviewReply r SET r.deleted = true WHERE r.id IN :ids AND r.deleted = false")
+    int softDeleteByIds(@Param("ids") Collection<Long> ids);
 
     /**
      * Every active reply in a thread, including the root itself. Top-level

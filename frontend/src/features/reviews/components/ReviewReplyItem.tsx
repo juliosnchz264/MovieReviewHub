@@ -100,7 +100,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
               {edited && ` · ${t("reviews.replyEdited")}`}
             </span>
           </div>
-          {!editing && !reply.deleted && (
+          {!editing && (
             <ReviewActionsMenu
               canEdit={showEdit}
               canDelete={showDelete}
@@ -140,17 +140,13 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
               </Button>
             </div>
           </div>
-        ) : reply.deleted ? (
-          <p className="mt-1 text-sm italic leading-relaxed text-muted-foreground">
-            {t("reviews.replyDeleted")}
-          </p>
         ) : (
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
             {reply.body}
           </p>
         )}
 
-        {!editing && !reply.deleted && (
+        {!editing && (
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <ReplyLikeButton
               kind={kind}

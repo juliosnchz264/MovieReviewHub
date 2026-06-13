@@ -1,12 +1,11 @@
 "use client";
 
-import { ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardActionsMenu } from "@/features/cards/components/CardActionsMenu";
 import { MyRatingDisplay } from "@/features/cards/components/MyRatingDisplay";
-import { cn } from "@/lib/utils";
+import { RowCarousel } from "@/components/row-carousel";
 import type { Series } from "@/types/series";
 
 interface Props {
@@ -28,14 +27,14 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
       </div>
 
       {isLoading && (
-        <ScrollContainer>
+        <RowCarousel>
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="w-32 shrink-0 sm:w-36 md:w-40">
               <Skeleton className="aspect-2/3 w-full rounded-xl opacity-60" />
               <Skeleton className="mt-2 h-4 w-3/4 opacity-60" />
             </div>
           ))}
-        </ScrollContainer>
+        </RowCarousel>
       )}
 
       {!isLoading && (!items || items.length === 0) && (
@@ -45,7 +44,7 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
       )}
 
       {!isLoading && items && items.length > 0 && (
-        <ScrollContainer>
+        <RowCarousel>
           {items.map((s) => (
             <article
               key={s.id}
@@ -88,57 +87,8 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
               </Link>
             </article>
           ))}
-        </ScrollContainer>
+        </RowCarousel>
       )}
     </section>
-  );
-}
-
-function ScrollContainer({ children }: { children: ReactNode }) {
-  const scrollerRef = useRef<HTMLDivElement>(null);
-  const [atStart, setAtStart] = useState(true);
-  const [hasOverflow, setHasOverflow] = useState(false);
-
-  useEffect(() => {
-    const el = scrollerRef.current;
-    if (!el) return;
-
-    const update = () => {
-      setHasOverflow(el.scrollWidth > el.clientWidth + 4);
-      setAtStart(el.scrollLeft <= 4);
-    };
-
-    update();
-    el.addEventListener("scroll", update, { passive: true });
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-
-    return () => {
-      el.removeEventListener("scroll", update);
-      ro.disconnect();
-    };
-  }, []);
-
-  const showFade = atStart && hasOverflow;
-
-  return (
-    <div className="relative -mx-3 sm:-mx-4">
-      <div
-        ref={scrollerRef}
-        className="touch-pan-x overflow-x-auto overscroll-x-contain px-3 pb-2 [scrollbar-width:thin] [-webkit-overflow-scrolling:touch] sm:px-4"
-      >
-        <div className="flex gap-3 sm:gap-4" style={{ minWidth: "max-content" }}>
-          {children}
-        </div>
-      </div>
-      <div
-        aria-hidden
-        className={cn(
-          "pointer-events-none absolute inset-y-0 right-0 w-12 transition-opacity duration-300",
-          "bg-linear-to-l from-background via-background/70 to-transparent",
-          showFade ? "opacity-100" : "opacity-0"
-        )}
-      />
-    </div>
   );
 }

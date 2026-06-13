@@ -2,11 +2,11 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { MessageSquare, Pencil, Trash2 } from "lucide-react";
+import { MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { UserAvatar } from "@/features/reviews/components/UserAvatar";
 import { ReplyLikeButton } from "@/features/reviews/components/ReplyLikeButton";
+import { ReviewActionsMenu } from "@/features/reviews/components/ReviewActionsMenu";
 import { ReviewReplyForm } from "@/features/reviews/components/ReviewReplyForm";
 import {
   useDeleteReply,
@@ -40,7 +40,6 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
   const [replying, setReplying] = useState(false);
   const [draft, setDraft] = useState(reply.body ?? "");
   const [error, setError] = useState<string | null>(null);
-  const [confirmDelete, setConfirmDelete] = useState(false);
 
   const update = useUpdateReply(kind, reviewId);
   const remove = useDeleteReply(kind, reviewId);
@@ -76,11 +75,9 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
 
   const onDeleteConfirm = async () => {
     await remove.mutateAsync(reply.id);
-    setConfirmDelete(false);
   };
 
   return (
-    <>
     <article
       id={`reply-${reply.id}`}
       className="flex gap-3 rounded-xl border border-border/60 bg-card/40 p-4 transition-shadow"
@@ -90,17 +87,30 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
       </Link>
 
       <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 text-sm">
-          <Link
-            href={`/users/${reply.userId}`}
-            className="font-medium hover:underline"
-          >
-            {reply.username}
-          </Link>
-          <span className="text-xs text-muted-foreground">
-            · {formatDate(reply.createdAt)}
-            {edited && ` · ${t("reviews.replyEdited")}`}
-          </span>
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href={`/users/${reply.userId}`}
+              className="font-medium hover:underline"
+            >
+              {reply.username}
+            </Link>
+            <span className="text-xs text-muted-foreground">
+              · {formatDate(reply.createdAt)}
+              {edited && ` · ${t("reviews.replyEdited")}`}
+            </span>
+          </div>
+          {!editing && !reply.deleted && (
+            <ReviewActionsMenu
+              canEdit={showEdit}
+              canDelete={showDelete}
+              onEdit={() => setEditing(true)}
+              onDelete={onDeleteConfirm}
+              deleteTitle={t("reviews.replyDeleteConfirm")}
+              triggerAriaLabel={t("reviews.replyActionsMenu")}
+              className="-mr-1 -mt-1 size-7 shrink-0"
+            />
+          )}
         </div>
 
         {editing ? (
@@ -161,30 +171,6 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
                 {t("reviews.replyAction")}
               </Button>
             )}
-            {showEdit && (
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => setEditing(true)}
-                aria-label={t("reviews.replyEditAction")}
-              >
-                <Pencil className="size-3" />
-                {t("reviews.replyEditAction")}
-              </Button>
-            )}
-            {showDelete && (
-              <Button
-                size="xs"
-                variant="ghost"
-                onClick={() => setConfirmDelete(true)}
-                disabled={remove.isPending}
-                aria-label={t("reviews.replyDeleteAction")}
-                className="text-muted-foreground hover:text-destructive"
-              >
-                <Trash2 className="size-3" />
-                {t("reviews.replyDeleteAction")}
-              </Button>
-            )}
           </div>
         )}
 
@@ -206,16 +192,5 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
         )}
       </div>
     </article>
-
-    <ConfirmDialog
-      open={confirmDelete}
-      title={t("reviews.replyDeleteConfirm")}
-      confirmLabel={t("reviews.replyDeleteAction")}
-      cancelLabel={t("common.cancel")}
-      destructive
-      onConfirm={onDeleteConfirm}
-      onClose={() => setConfirmDelete(false)}
-    />
-    </>
   );
 }

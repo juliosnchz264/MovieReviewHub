@@ -74,7 +74,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }));
 
   const seriesRoutes: MetadataRoute.Sitemap = series.map((s) => ({
-    url: `${SITE_URL}/series/${s.id}`,
+    url: `${SITE_URL}/series/${s.slug}`,
     lastModified: s.updatedAt ? new Date(s.updatedAt) : now,
     changeFrequency: "weekly",
     priority: 0.8,

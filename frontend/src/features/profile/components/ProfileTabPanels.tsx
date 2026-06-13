@@ -429,7 +429,7 @@ function SeriesWatchlistGrid({ items }: { items: { id: number; slug: string; tit
       {items.map((series) => (
         <Link
           key={series.id}
-          href={`/series/${series.id}`}
+          href={`/series/${series.slug}`}
           className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
         >
           <div className="relative aspect-2/3 bg-muted">

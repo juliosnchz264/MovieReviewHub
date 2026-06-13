@@ -105,7 +105,7 @@ export function seriesJsonLd(
     endDate: series.lastAirDate ?? undefined,
     numberOfSeasons: series.numberOfSeasons ?? undefined,
     numberOfEpisodes: series.numberOfEpisodes ?? undefined,
-    url: `${SITE_URL}/series/${series.id}`,
+    url: `${SITE_URL}/series/${series.slug}`,
     aggregateRating: aggregateRating(stats),
     review: reviews?.length ? reviews.map(reviewToLd) : undefined,
   };

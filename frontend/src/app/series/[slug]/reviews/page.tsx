@@ -6,11 +6,10 @@ import type { ReviewSort } from "@/types/review";
 
 export const dynamic = "force-dynamic";
 
-async function fetchSeries(id: string): Promise<Series | null> {
-  if (!Number.isFinite(Number(id))) return null;
+async function fetchSeries(key: string): Promise<Series | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/series/${id}`, {
+  const res = await fetchWithTimeout(`${apiBase}/series/${encodeURIComponent(key)}`, {
     next: { revalidate: 300 },
   });
   return safeJson<Series>(res);
@@ -24,10 +23,10 @@ function normalizeSort(input: string | string[] | undefined): ReviewSort {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const series = await fetchSeries(id);
+  const { slug } = await params;
+  const series = await fetchSeries(slug);
   if (!series) {
     return { title: "Reviews", robots: { index: false } };
   }
@@ -41,14 +40,14 @@ export default async function SeriesReviewsFeedPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ sort?: string | string[] }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
   const { sort: sortParam } = await searchParams;
-  const seriesId = Number(id);
   const sort = normalizeSort(sortParam);
-  const series = await fetchSeries(id);
+  const series = await fetchSeries(slug);
+  const seriesId = series?.id ?? Number(slug);
 
   return (
     <ReviewsFeedView
@@ -57,7 +56,7 @@ export default async function SeriesReviewsFeedPage({
       targetId={seriesId}
       initialSort={sort}
       targetTitle={series?.title ?? ""}
-      targetHref={`/series/${seriesId}`}
+      targetHref={`/series/${series?.slug ?? slug}`}
     />
   );
 }

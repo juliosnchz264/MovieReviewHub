@@ -211,7 +211,7 @@ export function SeriesDetailView({ seriesId }: { seriesId: number }) {
                 {similar.data.map((s) => (
                   <Link
                     key={s.id}
-                    href={`/series/${s.id}`}
+                    href={`/series/${s.slug}`}
                     className="group overflow-hidden rounded-xl border border-border/40 bg-card/40 transition hover:border-border hover:bg-card hover:shadow-md"
                   >
                     <div className="relative aspect-2/3 bg-muted/60">

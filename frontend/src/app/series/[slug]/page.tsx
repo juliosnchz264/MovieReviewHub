@@ -15,18 +15,17 @@ const SITE_URL =
 // Generate on demand; backend cold-start on Render must not block the build.
 export const dynamic = "force-dynamic";
 
-async function fetchSeries(id: string): Promise<Series | null> {
-  if (!Number.isFinite(Number(id))) return null;
+// `key` is the canonical slug; the backend also resolves public_id / legacy id.
+async function fetchSeries(key: string): Promise<Series | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/series/${id}`, {
+  const res = await fetchWithTimeout(`${apiBase}/series/${encodeURIComponent(key)}`, {
     next: { revalidate: 300 },
   });
   return safeJson<Series>(res);
 }
 
-async function fetchStats(id: string): Promise<MovieRatingStats | null> {
-  if (!Number.isFinite(Number(id))) return null;
+async function fetchStats(id: number): Promise<MovieRatingStats | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
   const res = await fetchWithTimeout(`${apiBase}/series/${id}/reviews/stats`, {
@@ -38,10 +37,10 @@ async function fetchStats(id: string): Promise<MovieRatingStats | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const series = await fetchSeries(id);
+  const { slug } = await params;
+  const series = await fetchSeries(slug);
 
   if (!series) {
     return {
@@ -56,7 +55,7 @@ export async function generateMetadata({
     `Reviews and rating for ${series.title}${year}.`;
 
   const images = series.imageUrl ? [{ url: series.imageUrl, alt: series.title }] : [];
-  const canonical = `${SITE_URL}/series/${series.id}`;
+  const canonical = `${SITE_URL}/series/${series.slug}`;
 
   return {
     title: series.title,
@@ -81,11 +80,12 @@ export async function generateMetadata({
 export default async function SeriesDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const seriesId = Number(id);
-  const [series, stats] = await Promise.all([fetchSeries(id), fetchStats(id)]);
+  const { slug } = await params;
+  const series = await fetchSeries(slug);
+  const seriesId = series?.id ?? Number(slug);
+  const stats = series ? await fetchStats(series.id) : null;
 
   const qc = makeServerQueryClient();
   if (series) qc.setQueryData(["series", "item", seriesId], series);
@@ -100,7 +100,7 @@ export default async function SeriesDetailPage({
             breadcrumbJsonLd([
               { name: "Home", url: SITE_URL },
               { name: "Series", url: `${SITE_URL}/series` },
-              { name: series.title, url: `${SITE_URL}/series/${series.id}` },
+              { name: series.title, url: `${SITE_URL}/series/${series.slug}` },
             ]),
           ]}
         />

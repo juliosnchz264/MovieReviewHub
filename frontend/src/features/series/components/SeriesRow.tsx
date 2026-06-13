@@ -58,7 +58,7 @@ export function SeriesRow({ title, subtitle, items, isLoading, emptyText }: Prop
                 targetId={s.id}
                 className="absolute left-1.5 top-1.5 z-10"
               />
-              <Link href={`/series/${s.id}`} className="block">
+              <Link href={`/series/${s.slug}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {s.imageUrl ? (
                     <Image

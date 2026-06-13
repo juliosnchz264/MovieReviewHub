@@ -39,4 +39,10 @@ public class PeopleController {
     public ResponseEntity<PersonDetailResponse> findById(@PathVariable Long tmdbId) {
         return ResponseEntity.ok(peopleService.findById(tmdbId));
     }
+
+    /** Canonical lookup by slug. Numeric + reserved subpaths excluded. */
+    @GetMapping("/{slug:(?!popular$)(?!search$)(?!\\d+$)[A-Za-z0-9-]+}")
+    public ResponseEntity<PersonDetailResponse> findBySlug(@PathVariable String slug) {
+        return ResponseEntity.ok(peopleService.findBySlug(slug));
+    }
 }

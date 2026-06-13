@@ -8,6 +8,7 @@ import java.util.List;
  */
 public record PersonDetailResponse(
         Long tmdbId,
+        String slug,
         String name,
         String biography,
         LocalDate birthday,

@@ -1,7 +1,11 @@
 package com.moviereviewhub.modules.people.service;
 
+import com.moviereviewhub.common.slug.PublicIdentifierFactory;
+import com.moviereviewhub.common.slug.Slugifier;
 import com.moviereviewhub.config.properties.TmdbProperties;
 import com.moviereviewhub.exception.ApiException;
+import com.moviereviewhub.modules.people.domain.Person;
+import com.moviereviewhub.modules.people.repository.PersonRepository;
 import com.moviereviewhub.modules.people.dto.PersonCreditResponse;
 import com.moviereviewhub.modules.people.dto.PersonDetailResponse;
 import com.moviereviewhub.modules.people.dto.PersonResponse;
@@ -14,10 +18,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestClient;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Proxy read-only sobre los endpoints /person de TMDB. No persiste nada.
@@ -30,6 +37,8 @@ public class PeopleService {
 
     private final RestClient tmdbRestClient;
     private final TmdbProperties tmdbProperties;
+    private final PersonRepository personRepository;
+    private final PublicIdentifierFactory publicIdentifierFactory;
 
     private void requireApiKey() {
         if (tmdbProperties.apiKey() == null || tmdbProperties.apiKey().isBlank()) {
@@ -38,6 +47,7 @@ public class PeopleService {
         }
     }
 
+    @Transactional
     public List<PersonResponse> popular(int page) {
         requireApiKey();
         TmdbPersonSearchResponse res = tmdbRestClient.get()
@@ -50,6 +60,7 @@ public class PeopleService {
         return mapList(res);
     }
 
+    @Transactional
     public List<PersonResponse> search(String query, int page) {
         requireApiKey();
         if (query == null || query.isBlank()) return List.of();
@@ -65,6 +76,15 @@ public class PeopleService {
         return mapList(res);
     }
 
+    /** Canonical resolution by slug → underlying TMDB id. */
+    @Transactional
+    public PersonDetailResponse findBySlug(String slug) {
+        Person person = personRepository.findBySlug(slug)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Person not found: " + slug));
+        return findById(person.getTmdbId());
+    }
+
+    @Transactional
     public PersonDetailResponse findById(Long tmdbId) {
         requireApiKey();
 
@@ -88,9 +108,11 @@ public class PeopleService {
                 .body(TmdbCreditsResponse.class);
 
         List<PersonCreditResponse> topCredits = topCredits(credits);
+        String slug = ensureSlug(detail.id(), detail.name(), detail.profilePath());
 
         return new PersonDetailResponse(
                 detail.id(),
+                slug,
                 detail.name(),
                 detail.biography(),
                 detail.birthday(),
@@ -109,18 +131,65 @@ public class PeopleService {
 
     private List<PersonResponse> mapList(TmdbPersonSearchResponse res) {
         if (res == null || res.results() == null) return List.of();
-        return res.results().stream()
-                .map(this::toResponse)
+        List<TmdbPerson> people = res.results();
+        Map<Long, String> slugs = ensureSlugs(people);
+        return people.stream()
+                .map(p -> new PersonResponse(
+                        p.id(),
+                        slugs.get(p.id()),
+                        p.name(),
+                        profileUrl(p.profilePath()),
+                        p.knownForDepartment()))
                 .toList();
     }
 
-    private PersonResponse toResponse(TmdbPerson p) {
-        return new PersonResponse(
-                p.id(),
-                p.name(),
-                profileUrl(p.profilePath()),
-                p.knownForDepartment()
-        );
+    // -----------------------------------------------------------------
+    // Slug registry (lazy local mapping slug <-> tmdb_id)
+    // -----------------------------------------------------------------
+
+    /** Slug for one TMDB person, creating the registry row on first sight. */
+    private String ensureSlug(Long tmdbId, String name, String profilePath) {
+        return personRepository.findByTmdbId(tmdbId)
+                .map(Person::getSlug)
+                .orElseGet(() -> createPerson(tmdbId, name, profilePath).getSlug());
+    }
+
+    /** Batch variant for list/search responses — one query plus inserts for misses. */
+    private Map<Long, String> ensureSlugs(List<TmdbPerson> people) {
+        Map<Long, String> out = new HashMap<>();
+        if (people == null || people.isEmpty()) return out;
+        List<Long> ids = people.stream()
+                .map(TmdbPerson::id)
+                .filter(java.util.Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, String> known = new HashMap<>();
+        for (Person p : personRepository.findByTmdbIdIn(ids)) {
+            known.put(p.getTmdbId(), p.getSlug());
+        }
+        for (TmdbPerson tp : people) {
+            if (tp.id() == null) continue;
+            String slug = known.get(tp.id());
+            if (slug == null) {
+                slug = createPerson(tp.id(), tp.name(), tp.profilePath()).getSlug();
+                known.put(tp.id(), slug); // IDENTITY save flushes → visible to next existsBySlug
+            }
+            out.put(tp.id(), slug);
+        }
+        return out;
+    }
+
+    private Person createPerson(Long tmdbId, String name, String profilePath) {
+        String safeName = (name == null || name.isBlank()) ? ("Person " + tmdbId) : name;
+        String base = Slugifier.slugify(safeName);
+        String seed = base.isEmpty() ? ("person-" + tmdbId) : safeName;
+        String slug = publicIdentifierFactory.uniqueSlug(seed, personRepository::existsBySlug);
+        return personRepository.save(Person.builder()
+                .tmdbId(tmdbId)
+                .slug(slug)
+                .name(safeName)
+                .profilePath(profilePath)
+                .build());
     }
 
     /**

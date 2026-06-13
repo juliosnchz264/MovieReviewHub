@@ -2,20 +2,23 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Film, Tv, Users, MessageSquare, Download } from "lucide-react";
+import { LayoutDashboard, Film, Tv, Users, MessageSquare, Download, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslate } from "@/hooks/useTranslate";
 
 const ITEMS = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/movies", label: "Movies", icon: Film },
-  { href: "/admin/movies/import", label: "Import movies", icon: Download },
-  { href: "/admin/series", label: "Series", icon: Tv },
-  { href: "/admin/series/import", label: "Import series", icon: Download },
-  { href: "/admin/users", label: "Users", icon: Users },
-  { href: "/admin/reviews", label: "Reviews", icon: MessageSquare },
+  { href: "/admin/dashboard", labelKey: "admin.nav.dashboard", icon: LayoutDashboard },
+  { href: "/admin/movies", labelKey: "admin.nav.movies", icon: Film },
+  { href: "/admin/movies/import", labelKey: "admin.nav.importMovies", icon: Download },
+  { href: "/admin/series", labelKey: "admin.nav.series", icon: Tv },
+  { href: "/admin/series/import", labelKey: "admin.nav.importSeries", icon: Download },
+  { href: "/admin/users", labelKey: "admin.nav.users", icon: Users },
+  { href: "/admin/reviews", labelKey: "admin.nav.reviews", icon: MessageSquare },
+  { href: "/admin/tmdb-tools", labelKey: "admin.nav.tmdbTools", icon: Link2 },
 ];
 
 export function AdminNav() {
+  const t = useTranslate();
   const pathname = usePathname();
 
   // Longest matching prefix wins → /admin/movies/import beats /admin/movies.
@@ -43,7 +46,7 @@ export function AdminNav() {
             )}
           >
             <Icon className="size-4" />
-            {item.label}
+            {t(item.labelKey)}
           </Link>
         );
       })}

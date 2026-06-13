@@ -11,9 +11,11 @@ import {
   useTmdbTvSearch,
 } from "@/features/series/hooks/useSeries";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { TmdbTvView } from "@/types/series";
 
 export default function ImportTmdbSeriesPage() {
+  const t = useTranslate();
   const [input, setInput] = useState("");
   const query = useDebouncedValue(input, 400);
 
@@ -28,11 +30,11 @@ export default function ImportTmdbSeriesPage() {
 
   function onImport(tmdbId: number, title: string) {
     importMutation.mutate(tmdbId, {
-      onSuccess: () => toast.success(`Imported "${title}"`),
+      onSuccess: () => toast.success(t("admin.importSeries.importedToast", { title })),
       onError: (err) => {
         const message =
           (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-          "Import failed";
+          t("admin.importSeries.importFailed");
         toast.error(message);
       },
     });
@@ -41,22 +43,22 @@ export default function ImportTmdbSeriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-medium">Import series from TMDB</h2>
+        <h2 className="text-lg font-medium">{t("admin.importSeries.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Search The Movie Database for TV shows and import them into the local catalog.
+          {t("admin.importSeries.subtitle")}
         </p>
       </div>
 
       <input
         type="search"
-        placeholder="Search TMDB TV (e.g. Breaking Bad)..."
+        placeholder={t("admin.importSeries.searchPlaceholder")}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
       />
 
       <p className="text-xs text-muted-foreground">
-        {isSearching ? `Results for "${query}"` : "Popular this week"}
+        {isSearching ? t("admin.importSeries.resultsFor", { query }) : t("admin.importSeries.popularThisWeek")}
       </p>
 
       {isLoading && (
@@ -74,13 +76,11 @@ export default function ImportTmdbSeriesPage() {
       )}
 
       {error && (
-        <p className="text-destructive">
-          Failed to load. Check that <code>TMDB_API_KEY</code> is set in backend.
-        </p>
+        <p className="text-destructive">{t("admin.importSeries.loadFailed")}</p>
       )}
 
       {!isLoading && data && data.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">No results</p>
+        <p className="py-8 text-center text-muted-foreground">{t("admin.importSeries.noResults")}</p>
       )}
 
       {data && data.length > 0 && (
@@ -108,6 +108,7 @@ function TvCard({
   onImport: () => void;
   importing: boolean;
 }) {
+  const t = useTranslate();
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="relative aspect-2/3 bg-muted">
@@ -121,7 +122,7 @@ function TvCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
-            No image
+            {t("admin.importSeries.noImage")}
           </div>
         )}
       </div>
@@ -138,11 +139,11 @@ function TvCard({
         <div className="mt-auto pt-2">
           {show.alreadyImported ? (
             <Button variant="outline" size="sm" disabled className="w-full">
-              Imported
+              {t("admin.importSeries.imported")}
             </Button>
           ) : (
             <Button size="sm" onClick={onImport} disabled={importing} className="w-full">
-              {importing ? "Importing..." : "Import"}
+              {importing ? t("admin.importSeries.importing") : t("admin.importSeries.import")}
             </Button>
           )}
         </div>

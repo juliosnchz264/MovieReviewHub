@@ -7,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { useMovies } from "@/features/movies/hooks/useMovies";
 import { useDeleteMovie } from "@/features/movies/hooks/useMovieMutations";
 import { useRefreshMovieGenres } from "@/features/admin/hooks/useTmdb";
+import { useTranslate } from "@/hooks/useTranslate";
 
 const PAGE_SIZE = 20;
 
 export default function AdminMoviesPage() {
+  const t = useTranslate();
   const [page, setPage] = useState(0);
   const { data, isLoading, isError } = useMovies({
     page,
@@ -21,52 +23,52 @@ export default function AdminMoviesPage() {
   const refreshGenres = useRefreshMovieGenres();
 
   function onDelete(id: number, title: string) {
-    if (!confirm(`Delete "${title}"? (soft delete, recoverable)`)) return;
+    if (!confirm(t("admin.movies.confirmDelete", { title }))) return;
     deleteMutation.mutate(id, {
-      onSuccess: () => toast.success(`Deleted "${title}"`),
-      onError: () => toast.error("Delete failed"),
+      onSuccess: () => toast.success(t("admin.movies.deleted", { title })),
+      onError: () => toast.error(t("admin.movies.deleteFailed")),
     });
   }
 
   function onRefreshGenres() {
-    if (!confirm("Re-fetch genres from TMDB for every movie? May take a while.")) return;
+    if (!confirm(t("admin.movies.confirmRefreshGenres"))) return;
     refreshGenres.mutate(undefined, {
       onSuccess: (r) =>
-        toast.success(`Updated ${r.updated} • skipped ${r.skipped} • failed ${r.failed}`),
-      onError: () => toast.error("Refresh failed"),
+        toast.success(t("admin.movies.refreshResult", { updated: r.updated, skipped: r.skipped, failed: r.failed })),
+      onError: () => toast.error(t("admin.movies.refreshFailed")),
     });
   }
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <p className="text-sm text-muted-foreground">{data?.totalElements ?? 0} movies</p>
+        <p className="text-sm text-muted-foreground">{t("admin.movies.count", { count: data?.totalElements ?? 0 })}</p>
         <div className="flex gap-2">
           <Button
             variant="outline"
             onClick={onRefreshGenres}
             disabled={refreshGenres.isPending}
           >
-            {refreshGenres.isPending ? "Refreshing..." : "Refresh genres from TMDB"}
+            {refreshGenres.isPending ? t("admin.movies.refreshing") : t("admin.movies.refreshGenres")}
           </Button>
           <Link href="/admin/movies/new">
-            <Button>New movie</Button>
+            <Button>{t("admin.movies.newMovie")}</Button>
           </Link>
         </div>
       </div>
 
-      {isLoading && <p className="text-muted-foreground">Loading...</p>}
-      {isError && <p className="text-destructive">Failed to load</p>}
+      {isLoading && <p className="text-muted-foreground">{t("admin.common.loading")}</p>}
+      {isError && <p className="text-destructive">{t("admin.common.loadFailed")}</p>}
 
       {data && (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border bg-muted/40">
               <tr className="text-left">
-                <th className="px-4 py-2 font-medium">Title</th>
-                <th className="px-4 py-2 font-medium">Genre</th>
-                <th className="px-4 py-2 font-medium">Release</th>
-                <th className="px-4 py-2 text-right font-medium">Actions</th>
+                <th className="px-4 py-2 font-medium">{t("admin.common.title")}</th>
+                <th className="px-4 py-2 font-medium">{t("admin.common.genre")}</th>
+                <th className="px-4 py-2 font-medium">{t("admin.movies.release")}</th>
+                <th className="px-4 py-2 text-right font-medium">{t("admin.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -83,7 +85,7 @@ export default function AdminMoviesPage() {
                     <div className="flex justify-end gap-2">
                       <Link href={`/admin/movies/${movie.id}/edit`}>
                         <Button variant="outline" size="sm">
-                          Edit
+                          {t("admin.common.edit")}
                         </Button>
                       </Link>
                       <Button
@@ -92,7 +94,7 @@ export default function AdminMoviesPage() {
                         onClick={() => onDelete(movie.id, movie.title)}
                         disabled={deleteMutation.isPending}
                       >
-                        Delete
+                        {t("admin.common.delete")}
                       </Button>
                     </div>
                   </td>
@@ -101,7 +103,7 @@ export default function AdminMoviesPage() {
               {data.content.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
-                    No movies yet
+                    {t("admin.movies.empty")}
                   </td>
                 </tr>
               )}
@@ -113,7 +115,7 @@ export default function AdminMoviesPage() {
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Page {data.page + 1} of {data.totalPages}
+            {t("admin.common.pageOf", { page: data.page + 1, total: data.totalPages })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -122,7 +124,7 @@ export default function AdminMoviesPage() {
               disabled={data.first}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
             >
-              Prev
+              {t("admin.common.prev")}
             </Button>
             <Button
               variant="outline"
@@ -130,7 +132,7 @@ export default function AdminMoviesPage() {
               disabled={data.last}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t("admin.common.next")}
             </Button>
           </div>
         </div>

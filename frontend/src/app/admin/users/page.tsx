@@ -9,10 +9,12 @@ import {
   useUnbanUser,
 } from "@/features/admin/hooks/useAdmin";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useTranslate } from "@/hooks/useTranslate";
 
 const PAGE_SIZE = 20;
 
 export default function AdminUsersPage() {
+  const t = useTranslate();
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -30,17 +32,21 @@ export default function AdminUsersPage() {
 
   function onToggle(userId: number, banned: boolean, username: string) {
     if (currentUser?.id === userId) {
-      toast.error("You cannot ban yourself");
+      toast.error(t("admin.users.cannotBanSelf"));
       return;
     }
     const action = banned ? unban : ban;
-    const verb = banned ? "Unbanned" : "Banned";
     action.mutate(userId, {
-      onSuccess: () => toast.success(`${verb} ${username}`),
+      onSuccess: () =>
+        toast.success(
+          banned
+            ? t("admin.users.unbannedToast", { username })
+            : t("admin.users.bannedToast", { username })
+        ),
       onError: (err) => {
         const message =
           (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-          "Action failed";
+          t("admin.users.actionFailed");
         toast.error(message);
       },
     });
@@ -51,27 +57,27 @@ export default function AdminUsersPage() {
       <form onSubmit={onSearch} className="flex gap-2">
         <input
           type="search"
-          placeholder="Search username or email..."
+          placeholder={t("admin.users.searchPlaceholder")}
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
-        <Button type="submit">Search</Button>
+        <Button type="submit">{t("admin.users.search")}</Button>
       </form>
 
-      {isLoading && <p className="text-muted-foreground">Loading...</p>}
-      {isError && <p className="text-destructive">Failed to load</p>}
+      {isLoading && <p className="text-muted-foreground">{t("admin.common.loading")}</p>}
+      {isError && <p className="text-destructive">{t("admin.common.loadFailed")}</p>}
 
       {data && (
         <div className="overflow-x-auto rounded-xl border border-border bg-card">
           <table className="w-full min-w-[640px] text-sm">
             <thead className="border-b border-border bg-muted/40">
               <tr className="text-left">
-                <th className="px-4 py-2 font-medium">User</th>
-                <th className="px-4 py-2 font-medium">Email</th>
-                <th className="px-4 py-2 font-medium">Role</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 text-right font-medium">Actions</th>
+                <th className="px-4 py-2 font-medium">{t("admin.users.user")}</th>
+                <th className="px-4 py-2 font-medium">{t("admin.users.email")}</th>
+                <th className="px-4 py-2 font-medium">{t("admin.users.role")}</th>
+                <th className="px-4 py-2 font-medium">{t("admin.users.status")}</th>
+                <th className="px-4 py-2 text-right font-medium">{t("admin.common.actions")}</th>
               </tr>
             </thead>
             <tbody>
@@ -87,11 +93,11 @@ export default function AdminUsersPage() {
                   <td className="px-4 py-2">
                     {u.banned ? (
                       <span className="rounded-md bg-destructive/10 px-2 py-0.5 text-xs text-destructive">
-                        Banned
+                        {t("admin.users.banned")}
                       </span>
                     ) : (
                       <span className="rounded-md bg-green-500/10 px-2 py-0.5 text-xs text-green-600 dark:text-green-400">
-                        Active
+                        {t("admin.users.active")}
                       </span>
                     )}
                   </td>
@@ -106,7 +112,7 @@ export default function AdminUsersPage() {
                       }
                       onClick={() => onToggle(u.id, u.banned, u.username)}
                     >
-                      {u.banned ? "Unban" : "Ban"}
+                      {u.banned ? t("admin.users.unban") : t("admin.users.ban")}
                     </Button>
                   </td>
                 </tr>
@@ -114,7 +120,7 @@ export default function AdminUsersPage() {
               {data.content.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-4 py-8 text-center text-muted-foreground">
-                    No users found
+                    {t("admin.users.empty")}
                   </td>
                 </tr>
               )}
@@ -126,7 +132,7 @@ export default function AdminUsersPage() {
       {data && data.totalPages > 1 && (
         <div className="flex items-center justify-between">
           <p className="text-sm text-muted-foreground">
-            Page {data.page + 1} of {data.totalPages} • {data.totalElements} total
+            {t("admin.common.pageOfTotal", { page: data.page + 1, total: data.totalPages, count: data.totalElements })}
           </p>
           <div className="flex gap-2">
             <Button
@@ -135,7 +141,7 @@ export default function AdminUsersPage() {
               disabled={data.first}
               onClick={() => setPage((p) => Math.max(0, p - 1))}
             >
-              Prev
+              {t("admin.common.prev")}
             </Button>
             <Button
               variant="outline"
@@ -143,7 +149,7 @@ export default function AdminUsersPage() {
               disabled={data.last}
               onClick={() => setPage((p) => p + 1)}
             >
-              Next
+              {t("admin.common.next")}
             </Button>
           </div>
         </div>

@@ -3,8 +3,10 @@
 import { Users, Film, Tv, MessageSquare, Heart, Shield, UserX, UserCheck } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminStats } from "@/features/admin/hooks/useAdmin";
+import { useTranslate } from "@/hooks/useTranslate";
 
 export default function AdminDashboardPage() {
+  const t = useTranslate();
   const { data: stats, isLoading, isError } = useAdminStats();
 
   if (isLoading) {
@@ -19,20 +21,20 @@ export default function AdminDashboardPage() {
       </div>
     );
   }
-  if (isError || !stats) return <p className="text-destructive">Failed to load stats</p>;
+  if (isError || !stats) return <p className="text-destructive">{t("admin.dashboard.loadFailed")}</p>;
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      <StatCard label="Total users" value={stats.totalUsers} icon={Users} />
-      <StatCard label="Active users" value={stats.activeUsers} icon={UserCheck} />
-      <StatCard label="Banned users" value={stats.bannedUsers} icon={UserX} />
-      <StatCard label="Admins" value={stats.admins} icon={Shield} />
-      <StatCard label="Movies" value={stats.totalMovies} icon={Film} />
-      <StatCard label="Series" value={stats.totalSeries} icon={Tv} />
-      <StatCard label="Movie reviews" value={stats.totalReviews} icon={MessageSquare} />
-      <StatCard label="Series reviews" value={stats.totalSeriesReviews} icon={MessageSquare} />
-      <StatCard label="Movie favorites" value={stats.totalFavorites} icon={Heart} />
-      <StatCard label="Series favorites" value={stats.totalSeriesFavorites} icon={Heart} />
+      <StatCard label={t("admin.dashboard.totalUsers")} value={stats.totalUsers} icon={Users} />
+      <StatCard label={t("admin.dashboard.activeUsers")} value={stats.activeUsers} icon={UserCheck} />
+      <StatCard label={t("admin.dashboard.bannedUsers")} value={stats.bannedUsers} icon={UserX} />
+      <StatCard label={t("admin.dashboard.admins")} value={stats.admins} icon={Shield} />
+      <StatCard label={t("admin.dashboard.movies")} value={stats.totalMovies} icon={Film} />
+      <StatCard label={t("admin.dashboard.series")} value={stats.totalSeries} icon={Tv} />
+      <StatCard label={t("admin.dashboard.movieReviews")} value={stats.totalReviews} icon={MessageSquare} />
+      <StatCard label={t("admin.dashboard.seriesReviews")} value={stats.totalSeriesReviews} icon={MessageSquare} />
+      <StatCard label={t("admin.dashboard.movieFavorites")} value={stats.totalFavorites} icon={Heart} />
+      <StatCard label={t("admin.dashboard.seriesFavorites")} value={stats.totalSeriesFavorites} icon={Heart} />
     </div>
   );
 }

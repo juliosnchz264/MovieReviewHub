@@ -8,13 +8,17 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { AdminNav } from "@/components/admin-nav";
 import { useIsAdmin } from "@/features/auth/hooks/useIsAdmin";
 import { useAuthStore } from "@/store/auth";
+import { useTranslate } from "@/hooks/useTranslate";
 
 export default function AdminLayout({ children }: { children: ReactNode }) {
+  const t = useTranslate();
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
+  const sessionRestored = useAuthStore((s) => s.sessionRestored);
   const { isAdmin, isLoading } = useIsAdmin();
 
   useEffect(() => {
+    if (!sessionRestored) return;
     if (!accessToken) {
       router.replace("/login");
       return;
@@ -22,12 +26,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     if (!isLoading && !isAdmin) {
       router.replace("/dashboard");
     }
-  }, [accessToken, isAdmin, isLoading, router]);
+  }, [sessionRestored, accessToken, isAdmin, isLoading, router]);
 
-  if (!accessToken || isLoading || !isAdmin) {
+  if (!sessionRestored || !accessToken || isLoading || !isAdmin) {
     return (
       <main className="flex min-h-screen items-center justify-center">
-        <p className="text-muted-foreground">Checking permissions...</p>
+        <p className="text-muted-foreground">{t("admin.checkingPermissions")}</p>
       </main>
     );
   }
@@ -36,12 +40,12 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     <main className="min-h-screen px-4 py-8">
       <div className="mx-auto w-full max-w-6xl space-y-6">
         <header className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight">Admin</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("admin.title")}</h1>
           <div className="flex items-center gap-2">
             <ThemeToggle />
             <Link href="/dashboard">
               <Button variant="outline" size="sm">
-                Exit admin
+                {t("admin.exit")}
               </Button>
             </Link>
           </div>

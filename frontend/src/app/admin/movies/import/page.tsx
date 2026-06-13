@@ -11,9 +11,11 @@ import {
   useImportTmdbMovie,
 } from "@/features/admin/hooks/useTmdb";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { useTranslate } from "@/hooks/useTranslate";
 import type { TmdbMovieView } from "@/types/tmdb";
 
 export default function ImportTmdbPage() {
+  const t = useTranslate();
   const [input, setInput] = useState("");
   const query = useDebouncedValue(input, 400);
 
@@ -28,11 +30,11 @@ export default function ImportTmdbPage() {
 
   function onImport(tmdbId: number, title: string) {
     importMutation.mutate(tmdbId, {
-      onSuccess: () => toast.success(`Imported "${title}"`),
+      onSuccess: () => toast.success(t("admin.importMovies.importedToast", { title })),
       onError: (err) => {
         const message =
           (err as { response?: { data?: { message?: string } } }).response?.data?.message ??
-          "Import failed";
+          t("admin.importMovies.importFailed");
         toast.error(message);
       },
     });
@@ -41,22 +43,22 @@ export default function ImportTmdbPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-medium">Import from TMDB</h2>
+        <h2 className="text-lg font-medium">{t("admin.importMovies.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Search The Movie Database and import a movie into the local catalog.
+          {t("admin.importMovies.subtitle")}
         </p>
       </div>
 
       <input
         type="search"
-        placeholder="Search TMDB (e.g. Inception)..."
+        placeholder={t("admin.importMovies.searchPlaceholder")}
         value={input}
         onChange={(e) => setInput(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
       />
 
       <p className="text-xs text-muted-foreground">
-        {isSearching ? `Results for "${query}"` : "Popular this week"}
+        {isSearching ? t("admin.importMovies.resultsFor", { query }) : t("admin.importMovies.popularThisWeek")}
       </p>
 
       {isLoading && (
@@ -74,13 +76,11 @@ export default function ImportTmdbPage() {
       )}
 
       {error && (
-        <p className="text-destructive">
-          Failed to load. Check that <code>TMDB_API_KEY</code> is set in backend.
-        </p>
+        <p className="text-destructive">{t("admin.importMovies.loadFailed")}</p>
       )}
 
       {!isLoading && data && data.length === 0 && (
-        <p className="py-8 text-center text-muted-foreground">No results</p>
+        <p className="py-8 text-center text-muted-foreground">{t("admin.importMovies.noResults")}</p>
       )}
 
       {data && data.length > 0 && (
@@ -108,6 +108,7 @@ function TmdbCard({
   onImport: () => void;
   importing: boolean;
 }) {
+  const t = useTranslate();
   return (
     <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
       <div className="relative aspect-2/3 bg-muted">
@@ -121,7 +122,7 @@ function TmdbCard({
           />
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground">
-            No image
+            {t("admin.importMovies.noImage")}
           </div>
         )}
       </div>
@@ -137,7 +138,7 @@ function TmdbCard({
         <div className="mt-auto pt-2">
           {movie.alreadyImported ? (
             <Button variant="outline" size="sm" disabled className="w-full">
-              Imported
+              {t("admin.importMovies.imported")}
             </Button>
           ) : (
             <Button
@@ -146,7 +147,7 @@ function TmdbCard({
               disabled={importing}
               className="w-full"
             >
-              {importing ? "Importing..." : "Import"}
+              {importing ? t("admin.importMovies.importing") : t("admin.importMovies.import")}
             </Button>
           )}
         </div>

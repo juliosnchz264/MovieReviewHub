@@ -21,6 +21,8 @@ public class JwtService {
     private static final String CLAIM_TYPE = "type";
     private static final String TYPE_ACCESS = "access";
     private static final String TYPE_REFRESH = "refresh";
+    private static final String TYPE_SSE = "sse";
+    private static final long SSE_TTL_MS = 60_000L;
 
     private final JwtProperties props;
     private final SecretKey key;
@@ -31,6 +33,15 @@ public class JwtService {
     }
 
     public String generateAccessToken(User user) {
+        return generateAccessToken(user, props.accessExpirationMs());
+    }
+
+    /**
+     * Variant that lets the caller pick a non-default TTL. Used by admin
+     * impersonation to mint a short-lived (5 min) access token without
+     * leaving a long-lived refresh trail.
+     */
+    public String generateAccessToken(User user, long ttlMs) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(user.getId().toString())
@@ -38,7 +49,24 @@ public class JwtService {
                 .claim(CLAIM_ROLE, user.getRole().name())
                 .claim(CLAIM_TYPE, TYPE_ACCESS)
                 .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusMillis(props.accessExpirationMs())))
+                .expiration(Date.from(now.plusMillis(ttlMs)))
+                .signWith(key, Jwts.SIG.HS256)
+                .compact();
+    }
+
+    /**
+     * Short-lived token (60s) scoped to the SSE stream endpoint. Carries no
+     * email/role claims so leaking it via Referer or proxy logs only enables
+     * a brief replay of the notifications stream and nothing else.
+     */
+    public String generateSseToken(User user) {
+        Instant now = Instant.now();
+        return Jwts.builder()
+                .id(UUID.randomUUID().toString())
+                .subject(user.getId().toString())
+                .claim(CLAIM_TYPE, TYPE_SSE)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusMillis(SSE_TTL_MS)))
                 .signWith(key, Jwts.SIG.HS256)
                 .compact();
     }
@@ -69,6 +97,10 @@ public class JwtService {
 
     public boolean isRefreshToken(Claims claims) {
         return TYPE_REFRESH.equals(claims.get(CLAIM_TYPE, String.class));
+    }
+
+    public boolean isSseToken(Claims claims) {
+        return TYPE_SSE.equals(claims.get(CLAIM_TYPE, String.class));
     }
 
     public Long getUserId(Claims claims) {

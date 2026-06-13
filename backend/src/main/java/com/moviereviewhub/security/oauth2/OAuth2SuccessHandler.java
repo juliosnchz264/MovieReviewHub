@@ -18,8 +18,11 @@ import org.springframework.security.web.authentication.AuthenticationSuccessHand
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
@@ -51,8 +54,18 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
             AuthResult result = oauth2AuthService.processOAuth2User(info);
             ResponseCookie refresh = authCookieFactory.refreshCookie(result.refreshToken());
+            ResponseCookie hint = authCookieFactory.hintCookie();
             response.addHeader(HttpHeaders.SET_COOKIE, refresh.toString());
-            response.sendRedirect(oauth2Properties.successRedirect());
+            response.addHeader(HttpHeaders.SET_COOKIE, hint.toString());
+
+            String target = oauth2Properties.successRedirect();
+            if (!isAllowedRedirect(target)) {
+                log.error("OAuth2 success redirect '{}' not in allowedRedirectOrigins {} — refusing",
+                        target, oauth2Properties.allowedRedirectOrigins());
+                redirectFailure(response, "oauth_invalid_redirect");
+                return;
+            }
+            response.sendRedirect(target);
 
         } catch (IllegalArgumentException | IllegalStateException e) {
             log.warn("OAuth2 success handler rejected user: {}", e.getMessage());
@@ -68,5 +81,33 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 + (oauth2Properties.failureRedirect().contains("?") ? "&" : "?")
                 + "error=" + URLEncoder.encode(reason, StandardCharsets.UTF_8);
         response.sendRedirect(url);
+    }
+
+    /**
+     * Compare scheme://host[:port] of the candidate URL against the
+     * configured allow-list. Defense in depth for the day this handler
+     * starts accepting a client-supplied redirect param.
+     */
+    boolean isAllowedRedirect(String url) {
+        if (url == null || url.isBlank()) return false;
+        List<String> allowed = oauth2Properties.allowedRedirectOrigins();
+        if (allowed == null || allowed.isEmpty()) return false;
+        try {
+            URI candidate = new URI(url);
+            String scheme = candidate.getScheme();
+            String host = candidate.getHost();
+            int port = candidate.getPort();
+            if (scheme == null || host == null) return false;
+            String candidateOrigin = port < 0
+                    ? scheme + "://" + host
+                    : scheme + "://" + host + ":" + port;
+            for (String origin : allowed) {
+                if (origin == null) continue;
+                if (origin.equalsIgnoreCase(candidateOrigin)) return true;
+            }
+            return false;
+        } catch (URISyntaxException ex) {
+            return false;
+        }
     }
 }

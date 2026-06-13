@@ -39,7 +39,11 @@ public class SecurityConfig {
             "/api/v1/auth/**",
             "/actuator/**",
             "/oauth2/**",
-            "/login/oauth2/**"
+            "/login/oauth2/**",
+            // Tomcat dispatches "/error" after async SSE completion/timeout;
+            // Spring Security re-runs the filter chain on that dispatch, so it
+            // must be permitAll or every SSE close emits an AccessDenied trace.
+            "/error"
     };
 
     // Solo se concatenan en perfil no-prod. Defensa en profundidad: aunque
@@ -57,6 +61,7 @@ public class SecurityConfig {
     private final CookieProperties cookieProperties;
     private final OAuth2SuccessHandler oauth2SuccessHandler;
     private final OAuth2FailureHandler oauth2FailureHandler;
+    private final com.moviereviewhub.config.properties.JwtProperties jwtProperties;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, Environment env) throws Exception {
@@ -112,7 +117,8 @@ public class SecurityConfig {
     public AuthorizationRequestRepository<OAuth2AuthorizationRequest> authorizationRequestRepository() {
         return new CookieOAuth2AuthorizationRequestRepository(
                 cookieProperties.secure(),
-                cookieProperties.sameSite()
+                cookieProperties.sameSite(),
+                java.util.Base64.getDecoder().decode(jwtProperties.secret())
         );
     }
 
@@ -121,8 +127,18 @@ public class SecurityConfig {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(corsProperties.allowedOrigins());
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("*"));
-        cfg.setExposedHeaders(List.of("Authorization"));
+        // Explicit allow-list. Wildcard "*" mixed with credentials is legal in
+        // Spring's CORS impl but a bad signal — request shaping is easier to
+        // reason about with a closed list.
+        cfg.setAllowedHeaders(List.of(
+                "Authorization",
+                "Content-Type",
+                "Accept",
+                "Accept-Language",
+                "X-Requested-With",
+                "X-Request-Id"
+        ));
+        cfg.setExposedHeaders(List.of("Authorization", "X-Request-Id"));
         cfg.setAllowCredentials(true);
         cfg.setMaxAge(3600L);
 

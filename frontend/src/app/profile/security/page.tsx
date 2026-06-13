@@ -1,11 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Info } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuthStore } from "@/store/auth";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
 import { useTranslate } from "@/hooks/useTranslate";
 import { AccountSection } from "@/features/account/components/AccountSection";
@@ -18,15 +16,10 @@ import { ProviderBadge } from "@/features/account/components/ProviderBadge";
 
 export default function SecurityPage() {
   const t = useTranslate();
-  const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { ready, authed } = useRequireAuth();
   const { data: user, isLoading } = useCurrentUser();
 
-  useEffect(() => {
-    if (!accessToken) router.replace("/login");
-  }, [accessToken, router]);
-
-  if (!accessToken) return null;
+  if (!ready || !authed) return null;
 
   const provider = user?.provider ?? null;
   const providerLabel = provider

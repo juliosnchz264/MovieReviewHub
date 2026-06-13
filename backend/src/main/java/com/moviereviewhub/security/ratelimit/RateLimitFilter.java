@@ -11,13 +11,16 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.lang.NonNull;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.time.Duration;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,34 +32,50 @@ import java.util.concurrent.ConcurrentHashMap;
 @RequiredArgsConstructor
 public class RateLimitFilter extends OncePerRequestFilter {
 
-    private static final Set<String> RATE_LIMITED_PATHS = Set.of(
+    private static final List<String> RATE_LIMITED_PATTERNS = List.of(
             "/api/v1/auth/login",
             "/api/v1/auth/register",
-            "/api/v1/auth/refresh"
+            "/api/v1/auth/refresh",
+            "/api/v1/users/me/password",
+            "/api/v1/users/me/password/set",
+            "/api/v1/users/me/email",
+            "/oauth2/authorization/**",
+            "/login/oauth2/code/**"
     );
 
     private static final int CAPACITY = 10;
     private static final Duration WINDOW = Duration.ofMinutes(1);
+    private static final int MAX_BUCKETS = 10_000;
 
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, Entry> buckets = new ConcurrentHashMap<>();
+    private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final ObjectMapper objectMapper;
+
+    private record Entry(Bucket bucket, long lastUsedEpochMs) {
+        Entry touch() { return new Entry(bucket, System.currentTimeMillis()); }
+    }
 
     @Override
     protected void doFilterInternal(@NonNull HttpServletRequest request,
                                     @NonNull HttpServletResponse response,
                                     @NonNull FilterChain chain) throws ServletException, IOException {
 
-        if (!RATE_LIMITED_PATHS.contains(request.getRequestURI())) {
+        if (!isRateLimited(request.getRequestURI())) {
             chain.doFilter(request, response);
             return;
         }
 
         String ip = clientIp(request);
-        Bucket bucket = buckets.computeIfAbsent(ip, k ->
-                Bucket.builder()
-                        .addLimit(Bandwidth.builder().capacity(CAPACITY).refillIntervally(CAPACITY, WINDOW).build())
-                        .build()
-        );
+        Entry entry = buckets.compute(ip, (k, current) -> {
+            if (current != null) return current.touch();
+            return new Entry(
+                    Bucket.builder()
+                            .addLimit(Bandwidth.builder().capacity(CAPACITY).refillIntervally(CAPACITY, WINDOW).build())
+                            .build(),
+                    System.currentTimeMillis()
+            );
+        });
+        Bucket bucket = entry.bucket();
 
         if (bucket.tryConsume(1)) {
             chain.doFilter(request, response);
@@ -74,6 +93,34 @@ public class RateLimitFilter extends OncePerRequestFilter {
                 request.getRequestURI()
         );
         response.getWriter().write(objectMapper.writeValueAsString(body));
+    }
+
+    private boolean isRateLimited(String uri) {
+        for (String pattern : RATE_LIMITED_PATTERNS) {
+            if (pattern.equals(uri)) return true;
+            if (pattern.contains("*") && pathMatcher.match(pattern, uri)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Sweep the bucket registry once an hour: drop entries idle longer than
+     * 10× the window, hard-cap total size. Without this the map grows
+     * unbounded with one entry per unique IP — a DoS surface on its own.
+     */
+    @Scheduled(fixedRate = 3_600_000L)
+    void sweepIdleBuckets() {
+        long cutoff = System.currentTimeMillis() - WINDOW.toMillis() * 10;
+        Iterator<Map.Entry<String, Entry>> it = buckets.entrySet().iterator();
+        while (it.hasNext()) {
+            if (it.next().getValue().lastUsedEpochMs() < cutoff) it.remove();
+        }
+        if (buckets.size() > MAX_BUCKETS) {
+            // Pathological growth — clear everything. Worst case all clients
+            // get a fresh full bucket; acceptable defense against memory DoS.
+            log.warn("rate-limit bucket cap {} reached, clearing", MAX_BUCKETS);
+            buckets.clear();
+        }
     }
 
     private String clientIp(HttpServletRequest request) {

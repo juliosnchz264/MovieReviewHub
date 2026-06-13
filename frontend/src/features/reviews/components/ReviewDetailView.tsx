@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Navbar } from "@/components/navbar";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ function targetHref(kind: ReviewKind, id: number) {
 
 export function ReviewDetailView({ kind, reviewId }: Props) {
   const t = useTranslate();
+  const router = useRouter();
   const { data: review, isLoading, isError } = useReviewDetail(kind, reviewId);
 
   return (
@@ -83,7 +85,12 @@ export function ReviewDetailView({ kind, reviewId }: Props) {
                 </div>
               </header>
 
-              <ReviewCard review={review} kind={kind} variant="full" />
+              <ReviewCard
+                review={review}
+                kind={kind}
+                variant="full"
+                onDeleted={() => router.replace(targetHref(kind, review.targetId))}
+              />
 
               <ReviewReplyList kind={kind} reviewId={review.id} />
             </>

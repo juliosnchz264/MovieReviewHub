@@ -1,11 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Heart, MessageSquare } from "lucide-react";
 import { RatingStars } from "@/features/reviews/components/RatingStars";
 import { UserAvatar } from "@/features/reviews/components/UserAvatar";
 import { ReviewLikeButton } from "@/features/reviews/components/ReviewLikeButton";
+import { ReviewActionsMenu } from "@/features/reviews/components/ReviewActionsMenu";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
+import { useIsAdmin } from "@/features/auth/hooks/useIsAdmin";
+import { useDeleteReview } from "@/features/reviews/hooks/useReviews";
+import { useDeleteSeriesReview } from "@/features/series/hooks/useSeriesReviews";
 import { useTranslate } from "@/hooks/useTranslate";
 import { cn } from "@/lib/utils";
 import type { ReviewCard as ReviewCardData, ReviewKind } from "@/types/review";
@@ -14,18 +19,37 @@ interface Props {
   review: ReviewCardData;
   kind: ReviewKind;
   variant?: "compact" | "full";
+  /** Called after a successful delete — e.g. to redirect off a detail page. */
+  onDeleted?: () => void;
 }
 
 function reviewDetailHref(kind: ReviewKind, id: number): string {
   return kind === "movie" ? `/reviews/${id}` : `/series-reviews/${id}`;
 }
 
-export function ReviewCard({ review, kind, variant = "compact" }: Props) {
+function targetHref(kind: ReviewKind, id: number): string {
+  return kind === "movie" ? `/movies/${id}` : `/series/${id}`;
+}
+
+export function ReviewCard({ review, kind, variant = "compact", onDeleted }: Props) {
   const t = useTranslate();
+  const router = useRouter();
   const { data: currentUser } = useCurrentUser();
+  const { isAdmin } = useIsAdmin();
+  const deleteMovieReview = useDeleteReview();
+  const deleteSeriesReview = useDeleteSeriesReview();
   const isOwn = currentUser?.id === review.userId;
   const detailHref = reviewDetailHref(kind, review.id);
   const profileHref = `/users/${review.userId}`;
+
+  // Editing a review reuses the inline editor on the title page (MyReviewPanel),
+  // so "edit" just navigates there rather than duplicating the rating form.
+  const onEdit = () => router.push(targetHref(kind, review.targetId));
+  const onDelete = async () => {
+    const mutation = kind === "movie" ? deleteMovieReview : deleteSeriesReview;
+    await mutation.mutateAsync(review.id);
+    onDeleted?.();
+  };
 
   return (
     <article
@@ -66,6 +90,18 @@ export function ReviewCard({ review, kind, variant = "compact" }: Props) {
             <RatingStars value={review.rating} readOnly size="sm" />
           </div>
         </div>
+
+        {(isOwn || isAdmin) && (
+          <ReviewActionsMenu
+            canEdit={isOwn}
+            canDelete={isOwn || isAdmin}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            deleteTitle={t("reviews.deleteConfirmTitle")}
+            deleteDescription={t("reviews.deleteConfirmDescription")}
+            className="-mr-1 -mt-1 shrink-0"
+          />
+        )}
       </header>
 
       {review.comment && (

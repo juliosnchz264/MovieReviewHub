@@ -91,7 +91,7 @@ export default function AwardsPage() {
               <section key={year} className="space-y-4">
                 <h2 className="text-xl font-medium">{year}</h2>
                 <div className="grid gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3">
-                  {byYear[year].map((entry) => {
+                  {(byYear[year] ?? []).map((entry) => {
                     const isMovie = entry.winner.mediaType === "movie";
                     const tmdbKey = String(entry.winner.tmdbId);
                     return (

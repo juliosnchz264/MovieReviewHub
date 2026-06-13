@@ -1,14 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { Shield, Mail, AtSign, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Navbar } from "@/components/navbar";
 import { useCurrentUser } from "@/features/auth/hooks/useCurrentUser";
-import { useAuthStore } from "@/store/auth";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { useTranslate } from "@/hooks/useTranslate";
 import { AccountSection } from "@/features/account/components/AccountSection";
 import { UsernameForm } from "@/features/account/components/UsernameForm";
@@ -19,24 +17,17 @@ import { StatsGrid } from "@/features/account/components/StatsGrid";
 
 function maskEmail(email: string): string {
   const [local, domain] = email.split("@");
-  if (!domain) return email;
+  if (!local || !domain) return email;
   if (local.length <= 2) return `${local[0]}•@${domain}`;
   return `${local.slice(0, 2)}${"•".repeat(Math.max(local.length - 2, 1))}@${domain}`;
 }
 
 export default function DashboardPage() {
   const t = useTranslate();
-  const router = useRouter();
-  const accessToken = useAuthStore((s) => s.accessToken);
+  const { ready, authed } = useRequireAuth();
   const { data: user, isLoading, isError } = useCurrentUser();
 
-  useEffect(() => {
-    if (!accessToken) {
-      router.replace("/login");
-    }
-  }, [accessToken, router]);
-
-  if (!accessToken) return null;
+  if (!ready || !authed) return null;
 
   return (
     <>

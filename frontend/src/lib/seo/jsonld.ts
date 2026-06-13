@@ -83,7 +83,7 @@ export function movieJsonLd(
     image: movie.imageUrl ?? undefined,
     genre: movie.genres,
     datePublished: movie.releaseDate ?? undefined,
-    url: `${SITE_URL}/movies/${movie.id}`,
+    url: `${SITE_URL}/movies/${movie.slug}`,
     aggregateRating: aggregateRating(stats),
     review: reviews?.length ? reviews.map(reviewToLd) : undefined,
   };

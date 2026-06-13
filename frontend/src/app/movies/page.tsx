@@ -130,7 +130,7 @@ export default function MoviesPage() {
                   targetId={movie.id}
                   className="absolute left-2 top-2 z-10"
                 />
-                <Link href={`/movies/${movie.id}`} className="block">
+                <Link href={`/movies/${movie.slug}`} className="block">
                   <div className="relative aspect-2/3 bg-muted">
                     {movie.imageUrl ? (
                       <Image

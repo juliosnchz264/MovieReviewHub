@@ -58,7 +58,7 @@ export function MovieRow({ title, subtitle, movies, isLoading, emptyText }: Prop
                 targetId={movie.id}
                 className="absolute left-1.5 top-1.5 z-10"
               />
-              <Link href={`/movies/${movie.id}`} className="block">
+              <Link href={`/movies/${movie.slug}`} className="block">
                 <div className="relative aspect-2/3 bg-muted/60">
                   {movie.imageUrl ? (
                     <Image

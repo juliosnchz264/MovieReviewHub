@@ -2,6 +2,8 @@ import type { PagedResponse } from "./movie";
 
 export interface Series {
   id: number;
+  slug: string;
+  publicId: string;
   title: string;
   description: string | null;
   genres: string[];

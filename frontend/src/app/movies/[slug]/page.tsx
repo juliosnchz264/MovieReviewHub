@@ -15,18 +15,18 @@ const SITE_URL =
 // Generate on demand; backend cold-start on Render must not block the build.
 export const dynamic = "force-dynamic";
 
-async function fetchMovie(id: string): Promise<Movie | null> {
-  if (!Number.isFinite(Number(id))) return null;
+// `key` is the canonical slug, but the backend also resolves a public_id or a
+// legacy numeric id, so old links keep working through this same route.
+async function fetchMovie(key: string): Promise<Movie | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/movies/${id}`, {
+  const res = await fetchWithTimeout(`${apiBase}/movies/${encodeURIComponent(key)}`, {
     next: { revalidate: 300 },
   });
   return safeJson<Movie>(res);
 }
 
-async function fetchStats(id: string): Promise<MovieRatingStats | null> {
-  if (!Number.isFinite(Number(id))) return null;
+async function fetchStats(id: number): Promise<MovieRatingStats | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
   const res = await fetchWithTimeout(`${apiBase}/movies/${id}/reviews/stats`, {
@@ -38,10 +38,10 @@ async function fetchStats(id: string): Promise<MovieRatingStats | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const movie = await fetchMovie(id);
+  const { slug } = await params;
+  const movie = await fetchMovie(slug);
 
   if (!movie) {
     return {
@@ -55,7 +55,7 @@ export async function generateMetadata({
     `Reviews and rating for ${movie.title}${movie.releaseDate ? ` (${movie.releaseDate.slice(0, 4)})` : ""}.`;
 
   const images = movie.imageUrl ? [{ url: movie.imageUrl, alt: movie.title }] : [];
-  const canonical = `${SITE_URL}/movies/${movie.id}`;
+  const canonical = `${SITE_URL}/movies/${movie.slug}`;
 
   return {
     title: movie.title,
@@ -80,11 +80,12 @@ export async function generateMetadata({
 export default async function MovieDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const movieId = Number(id);
-  const [movie, stats] = await Promise.all([fetchMovie(id), fetchStats(id)]);
+  const { slug } = await params;
+  const movie = await fetchMovie(slug);
+  const movieId = movie?.id ?? Number(slug);
+  const stats = movie ? await fetchStats(movie.id) : null;
 
   // Seed the client QueryClient with the SSR payload so the hooks in
   // MovieDetailView hit cache instead of re-fetching on hydrate.
@@ -101,7 +102,7 @@ export default async function MovieDetailPage({
             breadcrumbJsonLd([
               { name: "Home", url: SITE_URL },
               { name: "Movies", url: `${SITE_URL}/movies` },
-              { name: movie.title, url: `${SITE_URL}/movies/${movie.id}` },
+              { name: movie.title, url: `${SITE_URL}/movies/${movie.slug}` },
             ]),
           ]}
         />

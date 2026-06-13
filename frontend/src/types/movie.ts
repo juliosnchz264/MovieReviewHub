@@ -1,5 +1,7 @@
 export interface Movie {
   id: number;
+  slug: string;
+  publicId: string;
   title: string;
   description: string | null;
   genres: string[];

@@ -67,7 +67,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : [[], []];
 
   const movieRoutes: MetadataRoute.Sitemap = movies.map((m) => ({
-    url: `${SITE_URL}/movies/${m.id}`,
+    url: `${SITE_URL}/movies/${m.slug}`,
     lastModified: m.updatedAt ? new Date(m.updatedAt) : now,
     changeFrequency: "weekly",
     priority: 0.8,

@@ -6,11 +6,10 @@ import type { ReviewSort } from "@/types/review";
 
 export const dynamic = "force-dynamic";
 
-async function fetchMovie(id: string): Promise<Movie | null> {
-  if (!Number.isFinite(Number(id))) return null;
+async function fetchMovie(key: string): Promise<Movie | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/movies/${id}`, {
+  const res = await fetchWithTimeout(`${apiBase}/movies/${encodeURIComponent(key)}`, {
     next: { revalidate: 300 },
   });
   return safeJson<Movie>(res);
@@ -24,10 +23,10 @@ function normalizeSort(input: string | string[] | undefined): ReviewSort {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const movie = await fetchMovie(id);
+  const { slug } = await params;
+  const movie = await fetchMovie(slug);
   if (!movie) {
     return { title: "Reviews", robots: { index: false } };
   }
@@ -41,14 +40,14 @@ export default async function MovieReviewsFeedPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
   searchParams: Promise<{ sort?: string | string[] }>;
 }) {
-  const { id } = await params;
+  const { slug } = await params;
   const { sort: sortParam } = await searchParams;
-  const movieId = Number(id);
   const sort = normalizeSort(sortParam);
-  const movie = await fetchMovie(id);
+  const movie = await fetchMovie(slug);
+  const movieId = movie?.id ?? Number(slug);
 
   return (
     <ReviewsFeedView
@@ -57,7 +56,7 @@ export default async function MovieReviewsFeedPage({
       targetId={movieId}
       initialSort={sort}
       targetTitle={movie?.title ?? ""}
-      targetHref={`/movies/${movieId}`}
+      targetHref={`/movies/${movie?.slug ?? slug}`}
     />
   );
 }

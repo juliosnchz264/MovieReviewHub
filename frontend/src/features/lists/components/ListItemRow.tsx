@@ -18,7 +18,7 @@ export function ListItemRow({ item, canEdit, onRemove, className }: Props) {
   const target = isMovie ? item.movie : item.series;
   if (!target) return null;
 
-  const href = isMovie ? `/movies/${target.id}` : `/series/${target.id}`;
+  const href = isMovie ? `/movies/${target.slug}` : `/series/${target.id}`;
   const year = isMovie
     ? item.movie?.releaseDate?.slice(0, 4)
     : item.series?.firstAirDate?.slice(0, 4);

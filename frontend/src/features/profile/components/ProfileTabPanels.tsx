@@ -386,7 +386,7 @@ function FavoritesPanel({ isOwner }: { isOwner: boolean }) {
   );
 }
 
-function MovieWatchlistGrid({ items }: { items: { id: number; title: string; imageUrl?: string | null }[] }) {
+function MovieWatchlistGrid({ items }: { items: { id: number; slug: string; title: string; imageUrl?: string | null }[] }) {
   const t = useTranslate();
   if (items.length === 0) return <Empty message={t("profile.noWatchlistOwnerMovies")} />;
   return (
@@ -394,7 +394,7 @@ function MovieWatchlistGrid({ items }: { items: { id: number; title: string; ima
       {items.map((movie) => (
         <Link
           key={movie.id}
-          href={`/movies/${movie.id}`}
+          href={`/movies/${movie.slug}`}
           className="group relative overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
         >
           <div className="relative aspect-2/3 bg-muted">
@@ -421,7 +421,7 @@ function MovieWatchlistGrid({ items }: { items: { id: number; title: string; ima
   );
 }
 
-function SeriesWatchlistGrid({ items }: { items: { id: number; title: string; imageUrl?: string | null }[] }) {
+function SeriesWatchlistGrid({ items }: { items: { id: number; slug: string; title: string; imageUrl?: string | null }[] }) {
   const t = useTranslate();
   if (items.length === 0) return <Empty message={t("profile.noWatchlistOwnerSeries")} />;
   return (

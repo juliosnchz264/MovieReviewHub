@@ -40,7 +40,7 @@ export function ReviewCard({ review, kind, variant = "compact", onDeleted }: Pro
   const deleteSeriesReview = useDeleteSeriesReview();
   const isOwn = currentUser?.id === review.userId;
   const detailHref = reviewDetailHref(kind, review.id);
-  const profileHref = `/users/${review.userId}`;
+  const profileHref = `/users/${review.username}`;
 
   // Editing a review reuses the inline editor on the title page (MyReviewPanel),
   // so "edit" just navigates there rather than duplicating the rating form.

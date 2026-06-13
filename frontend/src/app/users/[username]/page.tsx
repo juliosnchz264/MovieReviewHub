@@ -15,23 +15,24 @@ interface PublicProfileLite {
   bio?: string | null;
 }
 
-async function fetchProfile(id: string): Promise<PublicProfileLite | null> {
-  if (!Number.isFinite(Number(id))) return null;
+// `key` is the canonical username; backend also resolves public_id / legacy id.
+async function fetchProfile(key: string): Promise<PublicProfileLite | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/users/${id}/profile`, {
-    next: { revalidate: 300 },
-  });
+  const res = await fetchWithTimeout(
+    `${apiBase}/users/${encodeURIComponent(key)}/profile`,
+    { next: { revalidate: 300 } }
+  );
   return safeJson<PublicProfileLite>(res);
 }
 
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const profile = await fetchProfile(id);
+  const { username } = await params;
+  const profile = await fetchProfile(username);
 
   if (!profile) {
     return {
@@ -46,7 +47,7 @@ export async function generateMetadata({
     profile.bio?.slice(0, 200) ??
     `${name}'s movie and series reviews on MovieReviewHub.`;
   const images = profile.avatarUrl ? [{ url: profile.avatarUrl, alt: name }] : [];
-  const canonical = `${SITE_URL}/users/${profile.id}`;
+  const canonical = `${SITE_URL}/users/${profile.username}`;
 
   return {
     title,
@@ -71,9 +72,8 @@ export async function generateMetadata({
 export default async function UserPublicProfilePage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ username: string }>;
 }) {
-  const { id } = await params;
-  const userId = Number(id);
-  return <UserProfileView userId={userId} />;
+  const { username } = await params;
+  return <UserProfileView profileKey={username} />;
 }

@@ -8,8 +8,10 @@ import type {
 import type { User } from "@/types/auth";
 
 export const profileService = {
-  async publicProfile(userId: number): Promise<PublicProfile> {
-    const { data } = await api.get<PublicProfile>(`/users/${userId}/profile`);
+  async publicProfile(key: string | number): Promise<PublicProfile> {
+    const { data } = await api.get<PublicProfile>(
+      `/users/${encodeURIComponent(String(key))}/profile`
+    );
     return data;
   },
 

@@ -15,7 +15,7 @@ export function ProfileRedirect() {
     if (!ready || !authed) return;
     if (user) {
       const q = params.toString();
-      router.replace(q ? `/users/${user.id}?${q}` : `/users/${user.id}`);
+      router.replace(q ? `/users/${user.username}?${q}` : `/users/${user.username}`);
     }
   }, [ready, authed, user, params, router]);
 

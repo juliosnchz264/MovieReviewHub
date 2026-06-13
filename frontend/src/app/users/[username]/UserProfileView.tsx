@@ -14,20 +14,21 @@ import { ProfileTabPanels } from "@/features/profile/components/ProfileTabPanels
 import { usePublicProfile } from "@/features/profile/hooks/usePublicProfile";
 import { useAuthStore } from "@/store/auth";
 
-export function UserProfileView({ userId }: { userId: number }) {
-  const validId = Number.isFinite(userId) && userId > 0;
+export function UserProfileView({ profileKey }: { profileKey: string }) {
+  const validKey = !!profileKey;
 
   const search = useSearchParams();
   const viewerId = useAuthStore((s) => s.user?.id ?? null);
-  const isOwner = viewerId === userId;
+
+  const profileQuery = usePublicProfile(validKey ? profileKey : undefined);
+  const isOwner =
+    viewerId !== null && profileQuery.data?.id === viewerId;
 
   const visibleTabs = getVisibleTabs(isOwner);
   const rawTab = (search.get("tab") ?? "overview") as ProfileTab;
   const activeTab: ProfileTab = visibleTabs.includes(rawTab) ? rawTab : "overview";
 
-  const profileQuery = usePublicProfile(validId ? userId : undefined);
-
-  if (!validId || profileQuery.isError) {
+  if (!validKey || profileQuery.isError) {
     notFound();
   }
 

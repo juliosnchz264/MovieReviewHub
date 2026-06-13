@@ -82,7 +82,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
       id={`reply-${reply.id}`}
       className="flex gap-3 rounded-xl border border-border/60 bg-card/40 p-4 transition-shadow"
     >
-      <Link href={`/users/${reply.userId}`} className="shrink-0">
+      <Link href={`/users/${reply.username}`} className="shrink-0">
         <UserAvatar url={reply.userAvatarUrl} name={reply.username} size={36} />
       </Link>
 
@@ -90,7 +90,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2 text-sm">
             <Link
-              href={`/users/${reply.userId}`}
+              href={`/users/${reply.username}`}
               className="font-medium hover:underline"
             >
               {reply.username}

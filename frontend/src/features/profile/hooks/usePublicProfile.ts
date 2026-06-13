@@ -8,11 +8,11 @@ import type {
 } from "@/types/user";
 import type { User } from "@/types/auth";
 
-export function usePublicProfile(userId: number | undefined) {
+export function usePublicProfile(key: string | number | undefined) {
   return useQuery({
-    queryKey: ["profile", "public", userId],
-    queryFn: () => profileService.publicProfile(userId!),
-    enabled: Number.isFinite(userId),
+    queryKey: ["profile", "public", key],
+    queryFn: () => profileService.publicProfile(key!),
+    enabled: key !== undefined && key !== null && key !== "",
     staleTime: 60_000,
   });
 }

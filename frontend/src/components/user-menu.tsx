@@ -88,7 +88,7 @@ export function UserMenu() {
   }
 
   const initials = user?.username?.slice(0, 2).toUpperCase() ?? "??";
-  const profileHref = user ? `/users/${user.id}` : "/";
+  const profileHref = user ? `/users/${user.username}` : "/";
 
   function close() {
     setOpen(false);

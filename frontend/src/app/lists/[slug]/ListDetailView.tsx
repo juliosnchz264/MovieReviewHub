@@ -118,7 +118,7 @@ export function ListDetailView({ slug }: { slug: string }) {
                 <p className="text-sm text-muted-foreground">
                   by{" "}
                   <Link
-                    href={`/users/${data.owner.id}/lists`}
+                    href={`/users/${data.owner.username}/lists`}
                     className="hover:underline"
                   >
                     {data.owner.username}

@@ -63,6 +63,10 @@ public class User extends BaseEntity {
     @Column(length = 50)
     private String handle;
 
+    /** Opaque, immutable public id — rename-proof fallback for /users/{username}. */
+    @Column(name = "public_id", nullable = false, length = 16, updatable = false)
+    private String publicId;
+
     @Column(name = "theme_color", length = 20)
     private String themeColor;
 

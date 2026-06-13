@@ -23,6 +23,7 @@ public class OAuth2AuthService {
     private final UserRepository userRepository;
     private final TokenIssuer tokenIssuer;
     private final DefaultListInitializer defaultListInitializer;
+    private final com.moviereviewhub.common.slug.PublicIdentifierFactory publicIdentifierFactory;
 
     public record OAuth2UserInfo(
             String provider,
@@ -91,6 +92,7 @@ public class OAuth2AuthService {
                 .providerId(info.providerId())
                 .avatarUrl(info.picture())
                 .profileCompleted(false)
+                .publicId(publicIdentifierFactory.uniquePublicId(userRepository::existsByPublicId))
                 .build();
         User saved = userRepository.save(user);
         defaultListInitializer.initializeForUser(saved.getId());

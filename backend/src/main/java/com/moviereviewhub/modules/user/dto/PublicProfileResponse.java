@@ -10,6 +10,7 @@ import java.time.Instant;
  */
 public record PublicProfileResponse(
         Long id,
+        String publicId,
         String username,
         String handle,
         String avatarUrl,

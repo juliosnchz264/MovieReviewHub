@@ -69,6 +69,14 @@ public class UserController {
                 .body(userService.getPublicProfile(id));
     }
 
+    /** Canonical public profile by username handle (or public_id fallback). */
+    @GetMapping("/{username:(?!me$)(?!availability$)(?!\\d+$)[A-Za-z0-9_.-]+}/profile")
+    public ResponseEntity<PublicProfileResponse> publicProfileByUsername(@PathVariable String username) {
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic())
+                .body(userService.getPublicProfileByUsername(username));
+    }
+
     @PatchMapping("/me/profile")
     public ResponseEntity<PublicProfileResponse> updateProfile(
             @AuthenticationPrincipal CustomUserDetails principal,

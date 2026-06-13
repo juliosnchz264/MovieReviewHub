@@ -115,7 +115,20 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .filter(u -> !u.isDeleted())
                 .orElseThrow(() -> new NotFoundException("User not found"));
+        return buildPublicProfile(user);
+    }
 
+    /** Public profile resolved by canonical handle (username, case-insensitive) or public_id. */
+    @Transactional(readOnly = true)
+    public PublicProfileResponse getPublicProfileByUsername(String username) {
+        User user = userRepository.findByUsernameIgnoreCaseAndDeletedFalse(username)
+                .or(() -> userRepository.findByPublicIdAndDeletedFalse(username))
+                .orElseThrow(() -> new NotFoundException("User not found"));
+        return buildPublicProfile(user);
+    }
+
+    private PublicProfileResponse buildPublicProfile(User user) {
+        Long userId = user.getId();
         MovieRatingStats movieStats = reviewRepository.getUserRatingStats(userId);
         MovieRatingStats tvStats = seriesReviewRepository.getUserRatingStats(userId);
         long publicLists = listRepository.countByUserIdAndVisibilityAndDeletedFalse(
@@ -123,6 +136,7 @@ public class UserService {
 
         return new PublicProfileResponse(
                 user.getId(),
+                user.getPublicId(),
                 user.getUsername(),
                 user.getHandle(),
                 user.getAvatarUrl(),

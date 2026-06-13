@@ -36,6 +36,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final TokenIssuer tokenIssuer;
     private final DefaultListInitializer defaultListInitializer;
+    private final com.moviereviewhub.common.slug.PublicIdentifierFactory publicIdentifierFactory;
 
     @Transactional
     public UserResponse register(RegisterRequest req) {
@@ -51,6 +52,7 @@ public class AuthService {
                 .email(req.email())
                 .password(passwordEncoder.encode(req.password()))
                 .role(UserRole.ROLE_USER)
+                .publicId(publicIdentifierFactory.uniquePublicId(userRepository::existsByPublicId))
                 .build();
 
         User saved = userRepository.save(user);

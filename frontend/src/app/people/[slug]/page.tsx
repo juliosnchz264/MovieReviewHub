@@ -9,17 +9,18 @@ export const dynamic = "force-dynamic";
 
 interface PersonLite {
   tmdbId: number;
+  slug: string;
   name: string;
   biography?: string | null;
   profileUrl?: string | null;
   knownForDepartment?: string | null;
 }
 
-async function fetchPerson(id: string): Promise<PersonLite | null> {
-  if (!Number.isFinite(Number(id))) return null;
+// `key` is the canonical slug; backend also resolves the legacy numeric tmdbId.
+async function fetchPerson(key: string): Promise<PersonLite | null> {
   const apiBase = backendApiBase();
   if (!apiBase) return null;
-  const res = await fetchWithTimeout(`${apiBase}/people/${id}`, {
+  const res = await fetchWithTimeout(`${apiBase}/people/${encodeURIComponent(key)}`, {
     next: { revalidate: 300 },
   });
   return safeJson<PersonLite>(res);
@@ -28,10 +29,10 @@ async function fetchPerson(id: string): Promise<PersonLite | null> {
 export async function generateMetadata({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
-  const { id } = await params;
-  const person = await fetchPerson(id);
+  const { slug } = await params;
+  const person = await fetchPerson(slug);
 
   if (!person) {
     return {
@@ -44,7 +45,7 @@ export async function generateMetadata({
     person.biography?.slice(0, 200) ??
     `${person.name}${person.knownForDepartment ? ` — ${person.knownForDepartment}` : ""}. Filmography on MovieReviewHub.`;
   const images = person.profileUrl ? [{ url: person.profileUrl, alt: person.name }] : [];
-  const canonical = `${SITE_URL}/people/${person.tmdbId}`;
+  const canonical = `${SITE_URL}/people/${person.slug}`;
 
   return {
     title: person.name,
@@ -69,9 +70,8 @@ export async function generateMetadata({
 export default async function PersonDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { id } = await params;
-  const tmdbId = Number(id);
-  return <PersonDetailView tmdbId={tmdbId} />;
+  const { slug } = await params;
+  return <PersonDetailView personKey={slug} />;
 }

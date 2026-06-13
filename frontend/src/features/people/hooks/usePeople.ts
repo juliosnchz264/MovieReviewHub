@@ -24,11 +24,11 @@ export function useSearchPeople(query: string) {
   });
 }
 
-export function usePerson(tmdbId: number | null) {
+export function usePerson(key: string | null) {
   return useQuery({
-    queryKey: ["people", "detail", tmdbId],
-    queryFn: () => peopleService.findById(tmdbId as number),
-    enabled: tmdbId !== null && Number.isFinite(tmdbId),
+    queryKey: ["people", "detail", key],
+    queryFn: () => peopleService.findById(key as string),
+    enabled: key !== null && key !== "",
     staleTime: 10 * 60_000,
   });
 }

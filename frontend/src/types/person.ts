@@ -1,5 +1,6 @@
 export interface Person {
   tmdbId: number;
+  slug: string;
   name: string;
   profileUrl: string | null;
   knownForDepartment: string | null;
@@ -18,6 +19,7 @@ export interface PersonCredit {
 
 export interface PersonDetail {
   tmdbId: number;
+  slug: string;
   name: string;
   biography: string | null;
   birthday: string | null;

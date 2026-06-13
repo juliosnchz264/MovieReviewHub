@@ -12,7 +12,7 @@ interface Props {
 export function PersonCard({ person }: Props) {
   return (
     <Link
-      href={`/people/${person.tmdbId}`}
+      href={`/people/${person.slug}`}
       className="group overflow-hidden rounded-xl border border-border bg-card transition hover:shadow-md"
     >
       <div className="relative aspect-2/3 bg-muted">

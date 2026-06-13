@@ -8,13 +8,11 @@ import { useTranslate } from "@/hooks/useTranslate";
 import { useLocaleStore } from "@/store/locale";
 import type { PersonCredit } from "@/types/person";
 
-export function PersonDetailView({ tmdbId }: { tmdbId: number }) {
+export function PersonDetailView({ personKey }: { personKey: string }) {
   const t = useTranslate();
   const locale = useLocaleStore((s) => s.locale);
 
-  const { data: person, isLoading, isError } = usePerson(
-    Number.isFinite(tmdbId) ? tmdbId : null
-  );
+  const { data: person, isLoading, isError } = usePerson(personKey || null);
 
   if (isLoading) {
     return (

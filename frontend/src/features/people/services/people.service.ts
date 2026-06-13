@@ -12,8 +12,10 @@ export const peopleService = {
     return data;
   },
 
-  async findById(tmdbId: number): Promise<PersonDetail> {
-    const { data } = await api.get<PersonDetail>(`/people/${tmdbId}`);
+  async findById(key: string | number): Promise<PersonDetail> {
+    const { data } = await api.get<PersonDetail>(
+      `/people/${encodeURIComponent(String(key))}`
+    );
     return data;
   },
 };

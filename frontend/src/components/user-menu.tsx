@@ -28,10 +28,17 @@ export function UserMenu() {
   const t = useTranslate();
   const router = useRouter();
   const accessToken = useAuthStore((s) => s.accessToken);
+  const sessionRestored = useAuthStore((s) => s.sessionRestored);
+  const sessionHint = useAuthStore((s) => s.sessionHint);
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -49,6 +56,20 @@ export function UserMenu() {
       document.removeEventListener("keydown", onKey);
     };
   }, []);
+
+  // SSR + first client render: emit a neutral placeholder so the markup
+  // matches and we never flash the wrong state. Once mounted on the client,
+  // decide based on the cookie hint (synchronous) and the restored session.
+  if (!mounted) {
+    return <AuthSlotSkeleton />;
+  }
+
+  // Cookie hint says a refresh cookie is present → render the authed shell
+  // (avatar skeleton) until /auth/refresh resolves. Eliminates the
+  // login/register CTAs flash on reload.
+  if (sessionHint && !sessionRestored && !accessToken) {
+    return <AuthSlotSkeleton />;
+  }
 
   if (!accessToken) {
     return (
@@ -202,6 +223,18 @@ function MenuItem({
       <Icon className="size-4 text-muted-foreground" />
       {children}
     </Link>
+  );
+}
+
+function AuthSlotSkeleton() {
+  return (
+    <div
+      aria-hidden
+      className="inline-flex items-center gap-2 rounded-full border border-border bg-background px-1 py-1"
+    >
+      <span className="size-7 rounded-full bg-muted" />
+      <span className="size-3.5" />
+    </div>
   );
 }
 

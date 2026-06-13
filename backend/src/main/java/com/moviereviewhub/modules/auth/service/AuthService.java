@@ -17,6 +17,7 @@ import com.moviereviewhub.security.jwt.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -25,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthService {
 
     private final UserRepository userRepository;
@@ -37,10 +39,10 @@ public class AuthService {
 
     @Transactional
     public UserResponse register(RegisterRequest req) {
-        if (userRepository.existsByEmailAndDeletedFalse(req.email())) {
+        if (userRepository.existsByEmailIgnoreCaseAndDeletedFalse(req.email())) {
             throw new ConflictException("Email already in use");
         }
-        if (userRepository.existsByUsernameAndDeletedFalse(req.username())) {
+        if (userRepository.existsByUsernameIgnoreCaseAndDeletedFalse(req.username())) {
             throw new ConflictException("Username already in use");
         }
 
@@ -58,21 +60,26 @@ public class AuthService {
 
     @Transactional
     public AuthResult login(LoginRequest req) {
-        // Pre-flight: if the email belongs to an OAuth-only account (no local
-        // password set), surface a specific 409 so the frontend can guide the
-        // user to the correct provider button instead of showing a generic
-        // "invalid credentials" error.
-        userRepository.findByEmailAndDeletedFalse(req.email()).ifPresent(existing -> {
-            if (existing.getPassword() == null && existing.getProvider() != null) {
-                throw new OAuthOnlyAccountException(existing.getProvider());
-            }
-        });
+        // Authenticate first so we don't leak account-state information
+        // (e.g., "this email is an OAuth-only account") to anyone who can
+        // throw arbitrary emails at /login. The OAuth-only hint is only
+        // surfaced AFTER a failed password attempt — at that point the
+        // requester has already spent a Bucket4j slot, so enumeration is
+        // significantly more expensive than the previous pre-flight check.
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(req.email(), req.password())
+            );
+        } catch (org.springframework.security.authentication.BadCredentialsException ex) {
+            userRepository.findByEmailIgnoreCaseAndDeletedFalse(req.email()).ifPresent(existing -> {
+                if (existing.getPassword() == null && existing.getProvider() != null) {
+                    throw new OAuthOnlyAccountException(existing.getProvider());
+                }
+            });
+            throw ex;
+        }
 
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(req.email(), req.password())
-        );
-
-        User user = userRepository.findByEmailAndDeletedFalse(req.email())
+        User user = userRepository.findByEmailIgnoreCaseAndDeletedFalse(req.email())
                 .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
 
         return tokenIssuer.issueTokens(user);
@@ -97,6 +104,18 @@ public class AuthService {
 
         RefreshToken stored = refreshTokenRepository.findByToken(refreshToken)
                 .orElseThrow(() -> new UnauthorizedException("Refresh token not recognized"));
+
+        // Replay detection: a syntactically valid token we know was already
+        // rotated out is being presented again. The legitimate owner has
+        // already moved on to a new token. Treat this as theft and revoke
+        // the entire family so the active attacker (or compromised client)
+        // is logged out everywhere on the next request.
+        if (stored.isRevoked()) {
+            log.warn("Refresh-token replay detected for user {} — revoking family",
+                    stored.getUser().getId());
+            refreshTokenRepository.revokeAllByUser(stored.getUser());
+            throw new UnauthorizedException("Refresh token replay detected");
+        }
 
         if (!stored.isUsable()) {
             throw new UnauthorizedException("Refresh token expired or revoked");

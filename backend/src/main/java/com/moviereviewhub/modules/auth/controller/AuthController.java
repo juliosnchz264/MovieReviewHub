@@ -53,15 +53,19 @@ public class AuthController {
     ) {
         authService.logout(refreshToken);
         ResponseCookie clear = authCookieFactory.clearCookie();
+        ResponseCookie clearHint = authCookieFactory.clearHintCookie();
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, clear.toString())
+                .header(HttpHeaders.SET_COOKIE, clearHint.toString())
                 .build();
     }
 
     private ResponseEntity<AuthResponse> tokenResponse(AuthResult result) {
         ResponseCookie cookie = authCookieFactory.refreshCookie(result.refreshToken());
+        ResponseCookie hint = authCookieFactory.hintCookie();
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, cookie.toString())
+                .header(HttpHeaders.SET_COOKIE, hint.toString())
                 .body(result.body());
     }
 }

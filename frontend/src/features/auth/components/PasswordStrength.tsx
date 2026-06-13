@@ -38,7 +38,11 @@ function scorePassword(pw: string, minLength: number): Score {
     "bg-yellow-500",
     "bg-emerald-500",
   ];
-  return { level, label: labels[level], className: colors[level] };
+  return {
+    level,
+    label: labels[level] ?? "",
+    className: colors[level] ?? "",
+  };
 }
 
 export function PasswordStrength({ password, minLength = 8 }: PasswordStrengthProps) {

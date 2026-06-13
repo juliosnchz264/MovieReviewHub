@@ -51,6 +51,25 @@ public class UserService {
             "green", "amber", "orange", "red", "slate"
     );
 
+    /**
+     * Whitelist of hostnames allowed as avatar / cover URL sources. Anything
+     * else gets rejected so a malicious user can't point their profile at an
+     * attacker-controlled URL (SSRF lateral via frontend prefetch, tracking
+     * pixels that log IP/UA on every public profile view).
+     *
+     * Supabase storage is the canonical upload path. The TMDB and Google CDNs
+     * cover OAuth-imported avatars.
+     */
+    private static final Set<String> ALLOWED_IMAGE_HOST_SUFFIXES = Set.of(
+            ".supabase.co",
+            ".supabase.in",
+            "image.tmdb.org",
+            "lh3.googleusercontent.com",
+            "lh4.googleusercontent.com",
+            "lh5.googleusercontent.com",
+            "lh6.googleusercontent.com"
+    );
+
     private final UserRepository userRepository;
     private final RefreshTokenRepository refreshTokenRepository;
     private final ReviewRepository reviewRepository;
@@ -136,10 +155,14 @@ public class UserService {
             user.setBio(sanitized.isEmpty() ? null : sanitized);
         }
         if (req.avatarUrl() != null) {
-            user.setAvatarUrl(emptyToNull(req.avatarUrl()));
+            String normalized = emptyToNull(req.avatarUrl());
+            requireAllowedImageHost(normalized, "avatarUrl");
+            user.setAvatarUrl(normalized);
         }
         if (req.coverUrl() != null) {
-            user.setCoverUrl(emptyToNull(req.coverUrl()));
+            String normalized = emptyToNull(req.coverUrl());
+            requireAllowedImageHost(normalized, "coverUrl");
+            user.setCoverUrl(normalized);
         }
         if (req.handle() != null) {
             String desired = req.handle().trim();
@@ -285,6 +308,33 @@ public class UserService {
         if (s == null) return null;
         String t = s.trim();
         return t.isEmpty() ? null : t;
+    }
+
+    /**
+     * Rejects URLs whose host is not on {@link #ALLOWED_IMAGE_HOST_SUFFIXES}.
+     * null is allowed (caller is clearing the field). Anything else (bare
+     * strings, non-https schemes, foreign hosts) is a 400.
+     */
+    private static void requireAllowedImageHost(String url, String field) {
+        if (url == null) return;
+        java.net.URI uri;
+        try {
+            uri = new java.net.URI(url);
+        } catch (java.net.URISyntaxException e) {
+            throw new BadRequestException(field + " is not a valid URL");
+        }
+        String scheme = uri.getScheme();
+        String host = uri.getHost();
+        if (!"https".equalsIgnoreCase(scheme) || host == null) {
+            throw new BadRequestException(field + " must be an https URL");
+        }
+        String lowered = host.toLowerCase();
+        for (String suffix : ALLOWED_IMAGE_HOST_SUFFIXES) {
+            if (suffix.startsWith(".") ? lowered.endsWith(suffix) : lowered.equals(suffix)) {
+                return;
+            }
+        }
+        throw new BadRequestException(field + " host not on the image allow-list");
     }
 
     private static boolean matchesMagicBytes(byte[] bytes, String contentType) {

@@ -9,6 +9,7 @@ function CallbackResolver() {
   const params = useSearchParams();
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
+  const sessionRestored = useAuthStore((s) => s.sessionRestored);
 
   useEffect(() => {
     const error = params.get("error");
@@ -16,14 +17,15 @@ function CallbackResolver() {
       router.replace(`/login?error=${encodeURIComponent(error)}`);
       return;
     }
+    // Wait for SessionInit's /auth/refresh to settle before deciding.
+    // Otherwise we redirect to /login on first render (token not yet present).
+    if (!sessionRestored) return;
     if (accessToken) {
       router.replace(user?.profileCompleted === false ? "/complete-profile" : "/dashboard");
       return;
     }
-    // SessionInit already ran by the time this page mounts. If there's no
-    // access token now, the refresh cookie was missing, blocked, or rejected.
     router.replace("/login?error=oauth_session_failed");
-  }, [accessToken, user, params, router]);
+  }, [sessionRestored, accessToken, user, params, router]);
 
   return null;
 }

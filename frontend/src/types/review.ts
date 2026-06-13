@@ -52,7 +52,7 @@ export interface ReviewReply {
   userId: number;
   username: string;
   userAvatarUrl: string | null;
-  body: string;
+  body: string | null;
   parentReplyId: number | null;
   rootReplyId: number | null;
   depth: number;
@@ -63,6 +63,7 @@ export interface ReviewReply {
   updatedAt: string;
   canEdit: boolean;
   canDelete: boolean;
+  deleted: boolean;
 }
 
 export interface ReviewReplyRequest {

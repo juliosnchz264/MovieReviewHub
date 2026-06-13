@@ -38,7 +38,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
   const t = useTranslate();
   const [editing, setEditing] = useState(false);
   const [replying, setReplying] = useState(false);
-  const [draft, setDraft] = useState(reply.body);
+  const [draft, setDraft] = useState(reply.body ?? "");
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -122,7 +122,7 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
                 variant="ghost"
                 onClick={() => {
                   setEditing(false);
-                  setDraft(reply.body);
+                  setDraft(reply.body ?? "");
                   setError(null);
                 }}
               >
@@ -130,13 +130,17 @@ export function ReviewReplyItem({ reply, kind, reviewId }: Props) {
               </Button>
             </div>
           </div>
+        ) : reply.deleted ? (
+          <p className="mt-1 text-sm italic leading-relaxed text-muted-foreground">
+            {t("reviews.replyDeleted")}
+          </p>
         ) : (
           <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-foreground/85">
             {reply.body}
           </p>
         )}
 
-        {!editing && (
+        {!editing && !reply.deleted && (
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <ReplyLikeButton
               kind={kind}

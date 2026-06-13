@@ -36,16 +36,31 @@ public interface ReviewReplyRepository extends JpaRepository<ReviewReply, Long> 
     /**
      * Top-level replies only (parent_reply_id IS NULL). Threaded UI paginates
      * roots; descendants load on demand via {@link #findThreadByRoot}.
+     *
+     * Includes a deleted root when it still has at least one active descendant
+     * (sharing root_reply_id) so the live sub-thread is not orphaned — the
+     * deleted root renders as a tombstone. A deleted root with no surviving
+     * descendants stays hidden.
      */
-    @Query("""
+    @Query(value = """
             SELECT r FROM ReviewReply r
             JOIN FETCH r.user
             WHERE r.targetType = :t AND r.targetId = :id
               AND r.parentReplyId IS NULL
-              AND r.deleted = false
+              AND (r.deleted = false
+                   OR EXISTS (SELECT 1 FROM ReviewReply c
+                              WHERE c.rootReplyId = r.id AND c.deleted = false))
             ORDER BY r.createdAt ASC, r.id ASC
+            """,
+            countQuery = """
+            SELECT COUNT(r) FROM ReviewReply r
+            WHERE r.targetType = :t AND r.targetId = :id
+              AND r.parentReplyId IS NULL
+              AND (r.deleted = false
+                   OR EXISTS (SELECT 1 FROM ReviewReply c
+                              WHERE c.rootReplyId = r.id AND c.deleted = false))
             """)
-    Page<ReviewReply> findActiveTopLevelByTarget(
+    Page<ReviewReply> findTopLevelByTarget(
             @Param("t") ReviewTargetType targetType,
             @Param("id") Long targetId,
             Pageable pageable);

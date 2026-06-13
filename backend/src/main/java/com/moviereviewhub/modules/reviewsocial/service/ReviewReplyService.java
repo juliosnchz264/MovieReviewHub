@@ -65,7 +65,7 @@ public class ReviewReplyService {
             ReviewTargetType type, Long reviewId, Long currentUserId,
             UserRole currentRole, Pageable pageable) {
         ensureReviewExists(type, reviewId);
-        Page<ReviewReply> page = replyRepository.findActiveTopLevelByTarget(type, reviewId, pageable);
+        Page<ReviewReply> page = replyRepository.findTopLevelByTarget(type, reviewId, pageable);
         return new PagedResponse<>(
                 enrich(page.getContent(), currentUserId, currentRole),
                 page.getNumber(),

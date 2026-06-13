@@ -289,6 +289,7 @@ export function useCreateReply(kind: ReviewKind, reviewId: number) {
         updatedAt: now,
         canEdit: true,
         canDelete: true,
+        deleted: false,
       };
 
       if (parentReplyId === null) {

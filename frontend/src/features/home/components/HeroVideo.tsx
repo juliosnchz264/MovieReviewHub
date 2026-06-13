@@ -45,6 +45,7 @@ export function HeroVideo({ slides, prevLabel, nextLabel }: HeroVideoProps) {
   }, []);
 
   const slide = slides[activeIndex];
+  if (!slide) return null;
   const { webm, mp4, poster } = assetUrls(slide.videoBase);
 
   const advance = () => {

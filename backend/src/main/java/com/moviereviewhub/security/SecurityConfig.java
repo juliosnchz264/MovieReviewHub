@@ -120,6 +120,17 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/users/*/profile").permitAll()
                         .anyRequest().authenticated()
                 )
+                // Return 401 (not the default oauth2Login 302 -> Google) for
+                // unauthenticated requests, so the SPA's axios interceptor can
+                // refresh the token and retry. Browser OAuth is started by a
+                // direct link to /oauth2/authorization/google, so login is
+                // unaffected by overriding the entry point here.
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, authEx) -> {
+                    response.setStatus(jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED);
+                    response.setContentType("application/json");
+                    response.getWriter().write(
+                            "{\"status\":401,\"error\":\"Unauthorized\",\"message\":\"Authentication required\"}");
+                }))
                 .oauth2Login(oauth -> oauth
                         .authorizationEndpoint(a -> a.authorizationRequestRepository(authorizationRequestRepository()))
                         .successHandler(oauth2SuccessHandler)

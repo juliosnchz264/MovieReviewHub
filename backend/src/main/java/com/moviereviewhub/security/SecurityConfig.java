@@ -28,6 +28,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Stream;
+import jakarta.servlet.DispatcherType;
 
 @Configuration
 @EnableWebSecurity
@@ -76,6 +77,14 @@ public class SecurityConfig {
                 .cors(c -> c.configurationSource(corsConfigurationSource()))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        // ASYNC/ERROR are internal re-dispatches of an already-authorized
+                        // request (SseEmitter completion, /error forward). Spring Security 6
+                        // filters all dispatcher types by default, so without this it
+                        // re-authorizes the SSE stream on async completion — when the
+                        // SecurityContext is already cleared — flooding AccessDenied traces
+                        // ("response already committed"). The initial REQUEST dispatch is
+                        // still fully authorized below.
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(publicPaths).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()

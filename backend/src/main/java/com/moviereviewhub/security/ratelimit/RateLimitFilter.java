@@ -44,14 +44,18 @@ public class RateLimitFilter extends OncePerRequestFilter {
             "/login/oauth2/code/**"
     );
 
-    // Looser tier: public catalog reads. Generous enough for real users and
-    // SEO crawlers, low enough to blunt bulk scraping / resource enumeration.
+    // Looser tier: the actual enumeration surface — catalog list/search and
+    // single-item detail. Single-segment patterns (e.g. /movies/*) deliberately
+    // exclude the chatty per-item sub-calls a logged-in SPA fires per card
+    // (/movies/{id}/in-my-lists, /reviews/me, /cast, /trailer, /similar), so
+    // normal browsing never trips the limit while bulk scraping still does.
     private static final List<String> READ_PATTERNS = List.of(
-            "/api/v1/movies/**",
-            "/api/v1/series/**",
-            "/api/v1/people/**",
-            "/api/v1/users/*/profile",
-            "/api/v1/users/*/lists"
+            "/api/v1/movies",
+            "/api/v1/movies/*",
+            "/api/v1/series",
+            "/api/v1/series/*",
+            "/api/v1/people/*",
+            "/api/v1/users/*/profile"
     );
 
     private static final int AUTH_CAPACITY = 10;

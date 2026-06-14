@@ -87,6 +87,15 @@ public class SecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(publicPaths).permitAll()
+                        // Per-user GETs that read the principal must require auth so an
+                        // anonymous/expired call returns 401 (triggering a token refresh)
+                        // instead of executing with a null principal and NPE-ing. Listed
+                        // BEFORE the broad catalog permitAll so the specific rule wins.
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/movies/*/reviews/me",
+                                "/api/v1/movies/*/in-my-lists",
+                                "/api/v1/series/*/reviews/me",
+                                "/api/v1/series/*/in-my-lists").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/series/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/people/**").permitAll()
